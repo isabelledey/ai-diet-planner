@@ -77,16 +77,15 @@ export function PhotoCapture({ onCapture, onBack, isAnalyzing }: PhotoCapturePro
   return (
     <div className="flex min-h-[100dvh] flex-col bg-background px-6 py-6">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="mb-6 flex items-center gap-3">
         <Button
-          variant="ghost"
-          size="icon"
+          variant="outline"
           onClick={onBack}
           className="rounded-xl"
           disabled={isAnalyzing}
         >
-          <ArrowLeft className="h-5 w-5" />
-          <span className="sr-only">Go back</span>
+          <ArrowLeft className="mr-2 h-5 w-5" />
+          Go Back
         </Button>
         <div>
           <h2 className="text-lg font-semibold text-foreground">Snap Your Meal</h2>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { UserProfile, DailyLog, MealSuggestion, MealAnalysis } from '@/lib/types'
 import { getDailyLog, saveDailyLog, saveMealToLog, fetchDailyLogFromSupabase, syncMealToSupabase, removeMealFromSupabase } from '@/lib/store'
 import { getTotalConsumed, calculateRemainingCalories } from '@/lib/nutrition'
@@ -15,12 +15,16 @@ import { toast } from 'sonner'
 interface DashboardProps {
   profile: UserProfile
   onAddMeal: () => void
+  onLogout: () => void
 }
 
-export function Dashboard({ profile, onAddMeal }: DashboardProps) {
+const DELETE_UNDO_MS = 5000
+
+export function Dashboard({ profile, onAddMeal, onLogout }: DashboardProps) {
   const [dailyLog, setDailyLog] = useState<DailyLog>(getDailyLog())
   const [suggestions, setSuggestions] = useState<MealSuggestion[]>([])
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
+  const pendingDeleteTimers = useRef<Map<string, number>>(new Map())
 
   const consumed = getTotalConsumed(dailyLog.meals)
   const remaining = calculateRemainingCalories(profile.dailyCalorieTarget, consumed.calories)
@@ -72,8 +76,14 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
     const loadFromSupabase = async () => {
       const remoteLog = await fetchDailyLogFromSupabase(profile.email)
       if (remoteLog && !ignore) {
-        saveDailyLog(remoteLog)
-        setDailyLog(remoteLog)
+        setDailyLog((prev) => {
+          const shouldUseRemote = remoteLog.meals.length >= prev.meals.length
+          if (!shouldUseRemote) {
+            return prev
+          }
+          saveDailyLog(remoteLog)
+          return remoteLog
+        })
       }
     }
     void loadFromSupabase()
@@ -81,6 +91,13 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
       ignore = true
     }
   }, [profile.email])
+
+  useEffect(() => {
+    return () => {
+      pendingDeleteTimers.current.forEach((timer) => window.clearTimeout(timer))
+      pendingDeleteTimers.current.clear()
+    }
+  }, [])
 
   const handleAddSuggestion = async (suggestion: MealSuggestion) => {
     const meal: MealAnalysis = {
@@ -111,19 +128,49 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
     toast.success(`${suggestion.name} added to your log!`)
   }
 
-  const handleRemoveMeal = async (mealIndex: number) => {
+  const handleRemoveMeal = (mealIndex: number) => {
     const mealToRemove = dailyLog.meals[mealIndex]
     if (!mealToRemove) return
-
-    if (mealToRemove.id) {
-      await removeMealFromSupabase(mealToRemove.id)
-    }
 
     const updatedMeals = dailyLog.meals.filter((_, index) => index !== mealIndex)
     const updatedLog: DailyLog = { ...dailyLog, meals: updatedMeals }
     saveDailyLog(updatedLog)
     setDailyLog(updatedLog)
-    toast.success('Meal removed from your log.')
+
+    const deleteKey = mealToRemove.id || `${mealToRemove.timestamp || Date.now()}-${mealIndex}-${Date.now()}`
+    let canceled = false
+
+    const timer = window.setTimeout(async () => {
+      pendingDeleteTimers.current.delete(deleteKey)
+      if (canceled || !mealToRemove.id) return
+      await removeMealFromSupabase(mealToRemove.id)
+    }, DELETE_UNDO_MS)
+
+    pendingDeleteTimers.current.set(deleteKey, timer)
+
+    toast('Meal removed from your log.', {
+      duration: DELETE_UNDO_MS,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          canceled = true
+          const pendingTimer = pendingDeleteTimers.current.get(deleteKey)
+          if (pendingTimer) {
+            window.clearTimeout(pendingTimer)
+            pendingDeleteTimers.current.delete(deleteKey)
+          }
+
+          setDailyLog((prev) => {
+            const restoredMeals = [...prev.meals]
+            const restoreIndex = Math.min(mealIndex, restoredMeals.length)
+            restoredMeals.splice(restoreIndex, 0, mealToRemove)
+            const restoredLog: DailyLog = { ...prev, meals: restoredMeals }
+            saveDailyLog(restoredLog)
+            return restoredLog
+          })
+        },
+      },
+    })
   }
 
   const today = new Date().toLocaleDateString('en-US', {
@@ -135,11 +182,16 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
   return (
     <div className="flex min-h-[100dvh] flex-col bg-background px-6 pb-24 pt-6">
       {/* Header */}
-      <div className="mb-6">
-        <p className="text-sm text-muted-foreground">{today}</p>
-        <h1 className="text-2xl font-bold text-foreground">
-          Hi{profile.name ? `, ${profile.name}` : ''}!
-        </h1>
+      <div className="mb-6 flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm text-muted-foreground">{today}</p>
+          <h1 className="text-2xl font-bold text-foreground">
+            Hi{profile.name ? `, ${profile.name}` : ''}!
+          </h1>
+        </div>
+        <Button variant="outline" onClick={onLogout} className="rounded-xl">
+          Log Out
+        </Button>
       </div>
 
       {/* Calorie ring section */}

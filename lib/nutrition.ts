@@ -44,31 +44,21 @@ export function getTotalConsumed(meals: MealAnalysis[]): {
   fat: number
   fiber: number
 } {
-  const toNumber = (value: unknown) => {
+  const safeInt = (value: unknown) => {
     const n = Number(value)
-    return Number.isFinite(n) ? n : 0
+    return Number.isFinite(n) ? Math.round(n) : 0
   }
 
-  const sumItemMacro = (meal: MealAnalysis, key: 'calories' | 'protein' | 'carbs' | 'fat') =>
-    (meal.items || []).reduce((sum, item) => sum + toNumber(item[key]), 0)
-
   return meals.reduce(
-    (acc, meal) => {
-      const calories = toNumber(meal.calories) || sumItemMacro(meal, 'calories')
-      const protein = toNumber(meal.protein) || sumItemMacro(meal, 'protein')
-      const carbs = toNumber(meal.carbs) || sumItemMacro(meal, 'carbs')
-      const fat = toNumber(meal.fat) || sumItemMacro(meal, 'fat')
-      const fiber = toNumber(meal.fiber)
-
-      return {
-        calories: acc.calories + calories,
-        protein: acc.protein + protein,
-        carbs: acc.carbs + carbs,
-        fat: acc.fat + fat,
-        fiber: acc.fiber + fiber,
-      }
+    (totals, meal) => {
+      totals.calories += safeInt(meal.calories)
+      totals.protein += safeInt(meal.protein)
+      totals.carbs += safeInt(meal.carbs)
+      totals.fat += safeInt(meal.fat)
+      totals.fiber += safeInt(meal.fiber)
+      return totals
     },
-    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }
+    { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
   )
 }
 

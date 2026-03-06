@@ -4,8 +4,10 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Mail, ArrowRight, Loader2 } from 'lucide-react'
 import { sendOTP } from '@/lib/auth'
+import { TermsModal } from '@/components/legal/terms-modal'
 
 interface EmailStepProps {
   onSubmit: (payload: { email: string; name: string }) => void
@@ -15,13 +17,15 @@ export function EmailStep({ onSubmit }: EmailStepProps) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
+  const [termsOpen, setTermsOpen] = useState(false)
 
   const isValidName = name.trim().length >= 2
   const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isValidName || !isValidEmail) return
+    if (!isValidName || !isValidEmail || !agreedToTerms) return
 
     setLoading(true)
     try {
@@ -79,9 +83,32 @@ export function EmailStep({ onSubmit }: EmailStepProps) {
           />
         </div>
 
+        <div className="flex items-start gap-3 rounded-xl border border-border bg-card p-3">
+          <Checkbox
+            id="terms"
+            checked={agreedToTerms}
+            onCheckedChange={(checked) => setAgreedToTerms(Boolean(checked))}
+            className="mt-0.5"
+          />
+          <Label htmlFor="terms" className="text-sm font-normal leading-relaxed text-muted-foreground">
+            I have read and agree to the{' '}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault()
+                setTermsOpen(true)
+              }}
+              className="font-medium text-foreground underline underline-offset-4"
+            >
+              Terms of Use
+            </button>
+            .
+          </Label>
+        </div>
+
         <Button
           type="submit"
-          disabled={!isValidName || !isValidEmail || loading}
+          disabled={!isValidName || !isValidEmail || !agreedToTerms || loading}
           className="mt-2 h-14 w-full rounded-2xl text-base font-semibold shadow-lg shadow-primary/20"
         >
           {loading ? (
@@ -91,12 +118,14 @@ export function EmailStep({ onSubmit }: EmailStepProps) {
             </>
           ) : (
             <>
-              Send Verification Code
+              Get Code
               <ArrowRight className="ml-1 h-5 w-5" />
             </>
           )}
         </Button>
       </form>
+
+      <TermsModal open={termsOpen} onOpenChange={setTermsOpen} />
     </div>
   )
 }

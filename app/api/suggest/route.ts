@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     preferences?: string[]
     mealType?: MealSuggestion['mealType']
     profile?: UserProfile
-    consumedToday?: { calories: number; protein: number; carbs: number; fat: number }
+    consumedToday?: { calories: number; protein: number; carbs: number; fat: number; fiber?: number }
   }
 
   if (remainingCalories === undefined) {

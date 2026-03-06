@@ -1,6 +1,6 @@
 'use client'
 
-import { RadialBarChart, RadialBar, ResponsiveContainer } from 'recharts'
+import { RadialBarChart, RadialBar, ResponsiveContainer, PolarAngleAxis } from 'recharts'
 
 interface CalorieRingProps {
   consumed: number
@@ -8,14 +8,15 @@ interface CalorieRingProps {
 }
 
 export function CalorieRing({ consumed, target }: CalorieRingProps) {
+  const safeTarget = Math.max(1, target)
+  const clampedConsumed = Math.max(0, consumed)
   const remaining = Math.max(0, target - consumed)
-  const percentage = Math.min(100, (consumed / target) * 100)
   const isOver = consumed > target
 
   const data = [
     {
       name: 'consumed',
-      value: percentage,
+      value: Math.min(clampedConsumed, safeTarget),
       fill: isOver ? 'oklch(0.577 0.245 27.325)' : 'oklch(0.52 0.1 155)',
     },
   ]
@@ -33,6 +34,7 @@ export function CalorieRing({ consumed, target }: CalorieRingProps) {
           data={data}
           barSize={12}
         >
+          <PolarAngleAxis type="number" domain={[0, safeTarget]} tick={false} />
           <RadialBar
             dataKey="value"
             cornerRadius={6}

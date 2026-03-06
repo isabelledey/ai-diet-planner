@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import type { AppStep, UserProfile, MealAnalysis } from '@/lib/types'
 import {
   getUserProfile,
@@ -10,6 +11,7 @@ import {
   setPendingMeal,
   getPendingMeal,
   clearPendingMeal,
+  clearAppSession,
   syncProfileToSupabase,
   syncMealToSupabase,
 } from '@/lib/store'
@@ -21,6 +23,7 @@ import { Dashboard } from '@/components/dashboard/dashboard'
 import { toast } from 'sonner'
 
 export default function Home() {
+  const router = useRouter()
   const [step, setStep] = useState<AppStep>('landing')
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [currentAnalysis, setCurrentAnalysis] = useState<MealAnalysis | null>(null)
@@ -83,7 +86,7 @@ export default function Home() {
     await runAnalysis(currentImage)
   }
 
-  const handleAnalysisContinue = () => {
+  const handleAnalysisContinue = async () => {
     if (currentAnalysis) {
       // Save the pending meal for after onboarding
       setPendingMeal(currentAnalysis)
@@ -97,7 +100,7 @@ export default function Home() {
           timestamp: currentAnalysis.timestamp || new Date().toISOString(),
         }
         saveMealToLog(mealWithTimestamp)
-        void syncMealToSupabase(profile.email, mealWithTimestamp)
+        await syncMealToSupabase(profile.email, mealWithTimestamp)
         clearPendingMeal()
         toast.success('Meal saved to your daily log!')
       }
@@ -137,6 +140,16 @@ export default function Home() {
     setStep('photo')
   }
 
+  const handleLogout = () => {
+    clearAppSession()
+    setProfile(null)
+    setCurrentAnalysis(null)
+    setCurrentImage(null)
+    setIsAnalyzing(false)
+    setStep('landing')
+    router.replace('/')
+  }
+
   return (
     <main className="mx-auto min-h-[100dvh] max-w-md">
       {step === 'landing' && <LandingHero onStart={handleStart} />}
@@ -164,7 +177,7 @@ export default function Home() {
       )}
 
       {step === 'dashboard' && profile && (
-        <Dashboard profile={profile} onAddMeal={handleAddMeal} />
+        <Dashboard profile={profile} onAddMeal={handleAddMeal} onLogout={handleLogout} />
       )}
     </main>
   )
