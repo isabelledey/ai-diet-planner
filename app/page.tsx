@@ -42,14 +42,15 @@ export default function Home() {
     setStep('photo')
   }
 
-  const runAnalysis = async (imageDataUrl: string) => {
+  const runAnalysis = async (realBase64String: string) => {
     setIsAnalyzing(true)
 
     try {
+      console.log('First 50 chars of image:', realBase64String.substring(0, 50))
       const res = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image: imageDataUrl }),
+        body: JSON.stringify({ image: realBase64String }),
       })
       const data = await res.json()
 
@@ -68,9 +69,9 @@ export default function Home() {
     }
   }
 
-  const handlePhotoCapture = async (imageDataUrl: string) => {
-    setCurrentImage(imageDataUrl)
-    await runAnalysis(imageDataUrl)
+  const handlePhotoCapture = async (realBase64String: string) => {
+    setCurrentImage(realBase64String)
+    await runAnalysis(realBase64String)
   }
 
   const handleAnalyzeAgain = async () => {

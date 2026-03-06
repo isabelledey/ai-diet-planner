@@ -1,28 +1,36 @@
 type GeminiPart =
   | { text: string }
-  | { inline_data: { mime_type: string; data: string } }
+  | { inlineData: { mimeType: string; data: string } };
 
 type GeminiContent = {
-  role: 'user'
-  parts: GeminiPart[]
-}
+  role: "user";
+  parts: GeminiPart[];
+};
 
 export async function generateWithGemini(
   contents: GeminiContent[],
-  options?: { model?: string; responseMimeType?: string },
+  options?: {
+    model?: string;
+    responseMimeType?: string;
+    systemPrompt?: string;
+  },
 ): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error('Missing GEMINI_API_KEY.')
+    throw new Error("Missing GEMINI_API_KEY.");
   }
 
-  const model = options?.model || process.env.GEMINI_MODEL || 'gemini-2.0-flash'
+  const model =
+    options?.model || process.env.GEMINI_MODEL || "gemini-2.5-flash";
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
     {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        ...(options?.systemPrompt
+          ? { system_instruction: { parts: [{ text: options.systemPrompt }] } }
+          : {}),
         contents,
         generationConfig: {
           temperature: 0.2,
@@ -30,35 +38,43 @@ export async function generateWithGemini(
         },
       }),
     },
-  )
+  );
 
   if (!response.ok) {
-    const text = await response.text()
-    throw new Error(`Gemini request failed: ${response.status} ${text}`)
+    const text = await response.text();
+    throw new Error(`Gemini request failed: ${response.status} ${text}`);
   }
 
-  const data = await response.json()
-  const text = data?.candidates?.[0]?.content?.parts?.find((p: any) => typeof p?.text === 'string')?.text
+  const data = await response.json();
+  const text = data?.candidates?.[0]?.content?.parts?.find(
+    (p: any) => typeof p?.text === "string",
+  )?.text;
   if (!text) {
-    throw new Error('Gemini returned empty content.')
+    throw new Error("Gemini returned empty content.");
   }
 
-  return text
+  return text;
 }
 
 export function parseJsonResponse<T>(raw: string): T {
   try {
-    return JSON.parse(raw) as T
+    return JSON.parse(raw) as T;
   } catch {
-    const cleaned = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/, '')
-    return JSON.parse(cleaned) as T
+    const cleaned = raw
+      .replace(/^```json\s*/i, "")
+      .replace(/^```\s*/i, "")
+      .replace(/\s*```$/, "");
+    return JSON.parse(cleaned) as T;
   }
 }
 
-export function dataUrlToInlineData(imageDataUrl: string): { mime_type: string; data: string } {
-  const match = imageDataUrl.match(/^data:(.+?);base64,(.+)$/)
+export function dataUrlToInlineData(imageDataUrl: string): {
+  mimeType: string;
+  data: string;
+} {
+  const match = imageDataUrl.match(/^data:(.+?);base64,(.+)$/);
   if (!match) {
-    throw new Error('Invalid image format. Expected data URL.')
+    throw new Error("Invalid image format. Expected data URL.");
   }
-  return { mime_type: match[1], data: match[2] }
+  return { mimeType: match[1], data: match[2] };
 }

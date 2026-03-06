@@ -9,7 +9,7 @@ import { MealCard } from './meal-card'
 import { SuggestionCard } from './suggestion-card'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Camera, Beef, Wheat, Droplets } from 'lucide-react'
+import { Camera, Beef, Wheat, Droplets, Leaf } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface DashboardProps {
@@ -40,6 +40,7 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
             protein: consumed.protein,
             carbs: consumed.carbs,
             fat: consumed.fat,
+            fiber: consumed.fiber,
           },
         }),
       })
@@ -59,6 +60,7 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
     consumed.protein,
     consumed.carbs,
     consumed.fat,
+    consumed.fiber,
   ])
 
   useEffect(() => {
@@ -145,7 +147,7 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
         <CalorieRing consumed={consumed.calories} target={profile.dailyCalorieTarget} />
 
         {/* Macro summary */}
-        <div className="mt-4 grid w-full max-w-xs grid-cols-3 gap-3">
+        <div className="mt-4 grid w-full max-w-xs grid-cols-2 gap-3">
           <Card className="flex flex-col items-center rounded-2xl border-border bg-card p-3">
             <Beef className="mb-1 h-4 w-4" style={{ color: 'oklch(0.52 0.1 155)' }} />
             <span className="text-lg font-bold text-foreground">{consumed.protein}g</span>
@@ -160,6 +162,11 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
             <Droplets className="mb-1 h-4 w-4" style={{ color: 'oklch(0.72 0.14 40)' }} />
             <span className="text-lg font-bold text-foreground">{consumed.fat}g</span>
             <span className="text-[10px] text-muted-foreground">Fat</span>
+          </Card>
+          <Card className="flex flex-col items-center rounded-2xl border-border bg-card p-3">
+            <Leaf className="mb-1 h-4 w-4" style={{ color: 'oklch(0.55 0.1 190)' }} />
+            <span className="text-lg font-bold text-foreground">{consumed.fiber}g</span>
+            <span className="text-[10px] text-muted-foreground">Fiber</span>
           </Card>
         </div>
       </div>

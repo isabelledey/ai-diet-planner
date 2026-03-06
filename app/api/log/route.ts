@@ -40,14 +40,19 @@ async function getOrCreateDailyLogId(profileId: string, logDate: string) {
 }
 
 function parseMealRow(row: Record<string, any>): MealAnalysis {
+  const toNumber = (value: unknown) => {
+    const n = Number(value)
+    return Number.isFinite(n) ? n : 0
+  }
+
   return {
     id: row.id,
     name: row.name,
-    calories: row.calories,
-    protein: row.protein,
-    carbs: row.carbs,
-    fat: row.fat,
-    fiber: row.fiber,
+    calories: toNumber(row.calories),
+    protein: toNumber(row.protein),
+    carbs: toNumber(row.carbs),
+    fat: toNumber(row.fat),
+    fiber: toNumber(row.fiber),
     items: row.items ?? [],
     imageUrl: row.image_url ?? undefined,
     timestamp: row.consumed_at ?? row.created_at,

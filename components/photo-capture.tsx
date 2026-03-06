@@ -11,19 +11,41 @@ interface PhotoCaptureProps {
 }
 
 export function PhotoCapture({ onCapture, onBack, isAnalyzing }: PhotoCaptureProps) {
-  const [preview, setPreview] = useState<string | null>(null)
+  const [realBase64String, setRealBase64String] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
 
-  const handleFile = useCallback((file: File) => {
-    if (!file.type.startsWith('image/')) return
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      setPreview(e.target?.result as string)
-    }
-    reader.readAsDataURL(file)
+  const toDataUrl = useCallback((file: File) => {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const result = e.target?.result
+        if (typeof result === 'string') {
+          resolve(result)
+          return
+        }
+        reject(new Error('Failed to read image as base64.'))
+      }
+      reader.onerror = () => reject(new Error('Failed to read selected file.'))
+      reader.readAsDataURL(file)
+    })
   }, [])
+
+  const handleFile = useCallback(async (file: File) => {
+    if (!file.type.startsWith('image/')) return
+    try {
+      const imageDataUrl = await toDataUrl(file)
+      setRealBase64String(imageDataUrl)
+    } catch {
+      // Ignore invalid file conversion errors.
+    }
+  }, [toDataUrl])
+
+  const handleCaptureClick = useCallback(() => {
+    if (!realBase64String) return
+    onCapture(realBase64String)
+  }, [realBase64String, onCapture])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -47,7 +69,7 @@ export function PhotoCapture({ onCapture, onBack, isAnalyzing }: PhotoCapturePro
   }
 
   const clearPreview = () => {
-    setPreview(null)
+    setRealBase64String(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
     if (cameraInputRef.current) cameraInputRef.current.value = ''
   }
@@ -74,11 +96,11 @@ export function PhotoCapture({ onCapture, onBack, isAnalyzing }: PhotoCapturePro
 
       {/* Photo area */}
       <div className="flex flex-1 flex-col items-center justify-center">
-        {preview ? (
+        {realBase64String ? (
           <div className="relative w-full max-w-sm">
             <div className="overflow-hidden rounded-3xl border-2 border-border shadow-lg">
               <img
-                src={preview}
+                src={realBase64String}
                 alt="Food photo preview"
                 className="aspect-square w-full object-cover"
               />
@@ -138,10 +160,10 @@ export function PhotoCapture({ onCapture, onBack, isAnalyzing }: PhotoCapturePro
       </div>
 
       {/* Analyze button */}
-      {preview && (
+      {realBase64String && (
         <div className="mt-6 pb-4">
           <Button
-            onClick={() => onCapture(preview)}
+            onClick={handleCaptureClick}
             disabled={isAnalyzing}
             className="h-14 w-full rounded-2xl text-base font-semibold shadow-lg shadow-primary/20"
           >

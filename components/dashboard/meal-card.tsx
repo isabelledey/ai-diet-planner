@@ -39,6 +39,9 @@ export function MealCard({ meal, index, onRemove }: MealCardProps) {
           <span className="text-xs text-muted-foreground">
             F {meal.fat}g
           </span>
+          <span className="text-xs text-muted-foreground">
+            Fi {meal.fiber}g
+          </span>
         </div>
       </div>
 
