@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { TermsModal } from '@/components/legal/terms-modal'
 import { AccessibilityModal } from '@/components/legal/accessibility-modal'
+import { useTranslation } from '@/components/i18n/language-provider'
 
 export function Footer() {
+  const { t } = useTranslation()
   const [termsOpen, setTermsOpen] = useState(false)
   const [accessibilityOpen, setAccessibilityOpen] = useState(false)
 
@@ -17,14 +19,14 @@ export function Footer() {
             onClick={() => setTermsOpen(true)}
             className="underline-offset-4 hover:text-foreground hover:underline"
           >
-            Terms of Use
+            {t('terms')}
           </button>
           <button
             type="button"
             onClick={() => setAccessibilityOpen(true)}
             className="underline-offset-4 hover:text-foreground hover:underline"
           >
-            Accessibility
+            {t('accessibility')}
           </button>
         </div>
       </footer>

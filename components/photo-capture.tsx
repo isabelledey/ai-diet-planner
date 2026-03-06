@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { Camera, Upload, X, ArrowLeft, Loader2 } from 'lucide-react'
+import { useTranslation } from '@/components/i18n/language-provider'
 
 interface PhotoCaptureProps {
   onCapture: (imageDataUrl: string) => void
@@ -11,6 +12,7 @@ interface PhotoCaptureProps {
 }
 
 export function PhotoCapture({ onCapture, onBack, isAnalyzing }: PhotoCaptureProps) {
+  const { t } = useTranslation()
   const [realBase64String, setRealBase64String] = useState<string | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -84,12 +86,12 @@ export function PhotoCapture({ onCapture, onBack, isAnalyzing }: PhotoCapturePro
           className="rounded-xl"
           disabled={isAnalyzing}
         >
-          <ArrowLeft className="mr-2 h-5 w-5" />
-          Go Back
+          <ArrowLeft className="mr-2 h-5 w-5 rtl:rotate-180" />
+          {t('go_back')}
         </Button>
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Snap Your Meal</h2>
-          <p className="text-sm text-muted-foreground">Take a photo or upload an image</p>
+          <h2 className="text-lg font-semibold text-foreground">{t('photo_title')}</h2>
+          <p className="text-sm text-muted-foreground">{t('photo_subtitle')}</p>
         </div>
       </div>
 
@@ -108,7 +110,7 @@ export function PhotoCapture({ onCapture, onBack, isAnalyzing }: PhotoCapturePro
               <button
                 onClick={clearPreview}
                 className="absolute -top-2 -right-2 flex h-8 w-8 items-center justify-center rounded-full bg-foreground text-background shadow-lg transition-transform hover:scale-110"
-                aria-label="Remove photo"
+                aria-label={t('remove_photo')}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -130,10 +132,10 @@ export function PhotoCapture({ onCapture, onBack, isAnalyzing }: PhotoCapturePro
             </div>
             <div className="text-center">
               <p className="mb-1 text-base font-medium text-foreground">
-                Capture your dish
+                {t('capture_dish')}
               </p>
               <p className="text-sm text-muted-foreground">
-                Take a photo or drag an image here
+                {t('capture_hint')}
               </p>
             </div>
 
@@ -143,7 +145,7 @@ export function PhotoCapture({ onCapture, onBack, isAnalyzing }: PhotoCapturePro
                 className="h-12 w-full rounded-2xl text-base font-semibold"
               >
                 <Camera className="mr-2 h-5 w-5" />
-                Take Photo
+                {t('take_photo')}
               </Button>
               <Button
                 variant="outline"
@@ -151,7 +153,7 @@ export function PhotoCapture({ onCapture, onBack, isAnalyzing }: PhotoCapturePro
                 className="h-12 w-full rounded-2xl text-base font-medium"
               >
                 <Upload className="mr-2 h-5 w-5" />
-                Upload Image
+                {t('upload_image')}
               </Button>
             </div>
           </div>
@@ -169,10 +171,10 @@ export function PhotoCapture({ onCapture, onBack, isAnalyzing }: PhotoCapturePro
             {isAnalyzing ? (
               <>
                 <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Analyzing your meal...
+                {t('analyzing_meal')}
               </>
             ) : (
-              'Analyze Calories'
+              t('analyze_calories')
             )}
           </Button>
         </div>
@@ -186,7 +188,7 @@ export function PhotoCapture({ onCapture, onBack, isAnalyzing }: PhotoCapturePro
         capture="environment"
         onChange={handleFileChange}
         className="hidden"
-        aria-label="Take a photo"
+        aria-label={t('aria_take_photo')}
       />
       <input
         ref={fileInputRef}
@@ -194,7 +196,7 @@ export function PhotoCapture({ onCapture, onBack, isAnalyzing }: PhotoCapturePro
         accept="image/*"
         onChange={handleFileChange}
         className="hidden"
-        aria-label="Upload an image"
+        aria-label={t('aria_upload_image')}
       />
     </div>
   )

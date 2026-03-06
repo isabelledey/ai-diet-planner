@@ -8,12 +8,14 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Mail, ArrowRight, Loader2 } from 'lucide-react'
 import { sendOTP } from '@/lib/auth'
 import { TermsModal } from '@/components/legal/terms-modal'
+import { useTranslation } from '@/components/i18n/language-provider'
 
 interface EmailStepProps {
   onSubmit: (payload: { email: string; name: string }) => void
 }
 
 export function EmailStep({ onSubmit }: EmailStepProps) {
+  const { t } = useTranslation()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -46,20 +48,20 @@ export function EmailStep({ onSubmit }: EmailStepProps) {
         <Mail className="h-8 w-8 text-primary" />
       </div>
 
-      <h2 className="mb-2 text-2xl font-bold text-foreground">{"What's your name and email?"}</h2>
+      <h2 className="mb-2 text-2xl font-bold text-foreground">{t('email_title')}</h2>
       <p className="mb-8 text-sm text-muted-foreground leading-relaxed">
-        {"We'll"} send you a verification code to create your personalized nutrition profile.
+        {t('email_subtitle')}
       </p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
           <Label htmlFor="name" className="text-sm font-medium text-foreground">
-            Full name
+            {t('full_name')}
           </Label>
           <Input
             id="name"
             type="text"
-            placeholder="Jane Doe"
+            placeholder={t('name_placeholder')}
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="h-12 rounded-xl text-base"
@@ -70,12 +72,12 @@ export function EmailStep({ onSubmit }: EmailStepProps) {
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="email" className="text-sm font-medium text-foreground">
-            Email address
+            {t('email_address')}
           </Label>
           <Input
             id="email"
             type="email"
-            placeholder="your@email.com"
+            placeholder={t('email_placeholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="h-12 rounded-xl text-base"
@@ -91,7 +93,7 @@ export function EmailStep({ onSubmit }: EmailStepProps) {
             className="mt-0.5"
           />
           <Label htmlFor="terms" className="text-sm font-normal leading-relaxed text-muted-foreground">
-            I have read and agree to the{' '}
+            {t('terms_agree_prefix')}{' '}
             <button
               type="button"
               onClick={(e) => {
@@ -100,9 +102,9 @@ export function EmailStep({ onSubmit }: EmailStepProps) {
               }}
               className="font-medium text-foreground underline underline-offset-4"
             >
-              Terms of Use
+              {t('terms_agree_link')}
             </button>
-            .
+            {t('terms_agree_suffix')}
           </Label>
         </div>
 
@@ -114,11 +116,11 @@ export function EmailStep({ onSubmit }: EmailStepProps) {
           {loading ? (
             <>
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Sending code...
+              {t('sending_code')}
             </>
           ) : (
             <>
-              Get Code
+              {t('get_code')}
               <ArrowRight className="ml-1 h-5 w-5" />
             </>
           )}

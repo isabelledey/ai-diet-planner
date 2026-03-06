@@ -4,6 +4,7 @@ import type { MealAnalysis } from '@/lib/types'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Clock, Flame, Trash2 } from 'lucide-react'
+import { useTranslation } from '@/components/i18n/language-provider'
 
 interface MealCardProps {
   meal: MealAnalysis
@@ -12,9 +13,10 @@ interface MealCardProps {
 }
 
 export function MealCard({ meal, index, onRemove }: MealCardProps) {
+  const { t } = useTranslation()
   const time = meal.timestamp
     ? new Date(meal.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : `Meal ${index + 1}`
+    : t('meal_fallback', { index: index + 1 })
 
   return (
     <Card className="flex items-center gap-4 rounded-2xl border-border bg-card p-4">
@@ -47,7 +49,7 @@ export function MealCard({ meal, index, onRemove }: MealCardProps) {
 
       <div className="text-right">
         <span className="text-lg font-bold text-foreground">{meal.calories}</span>
-        <p className="text-[10px] text-muted-foreground">kcal</p>
+        <p className="text-[10px] text-muted-foreground">{t('kcal_short')}</p>
       </div>
 
       <Button
@@ -56,7 +58,7 @@ export function MealCard({ meal, index, onRemove }: MealCardProps) {
         size="icon"
         onClick={onRemove}
         className="h-9 w-9 rounded-lg text-muted-foreground hover:text-destructive"
-        aria-label={`Remove ${meal.name}`}
+        aria-label={t('aria_remove_meal', { meal: meal.name })}
       >
         <Trash2 className="h-4 w-4" />
       </Button>

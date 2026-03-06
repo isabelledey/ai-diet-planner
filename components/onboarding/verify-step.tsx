@@ -6,6 +6,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { ArrowLeft, ArrowRight, Loader2, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { sendOTP, verifyOTP } from '@/lib/auth'
+import { useTranslation } from '@/components/i18n/language-provider'
 
 interface VerifyStepProps {
   email: string
@@ -15,6 +16,7 @@ interface VerifyStepProps {
 }
 
 export function VerifyStep({ email, name, onVerified, onBack }: VerifyStepProps) {
+  const { t } = useTranslation()
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [countdown, setCountdown] = useState(30)
@@ -41,7 +43,7 @@ export function VerifyStep({ email, name, onVerified, onBack }: VerifyStepProps)
         setCode('')
       }
     } catch {
-      toast.error('Something went wrong. Please try again.')
+      toast.error(t('generic_error'))
     } finally {
       setLoading(false)
     }
@@ -56,7 +58,7 @@ export function VerifyStep({ email, name, onVerified, onBack }: VerifyStepProps)
         setCanResend(true)
       }
     } catch {
-      toast.error('Failed to resend code')
+      toast.error(t('toast_resend_failed'))
       setCanResend(true)
     }
   }
@@ -74,10 +76,11 @@ export function VerifyStep({ email, name, onVerified, onBack }: VerifyStepProps)
         <ShieldCheck className="h-8 w-8 text-primary" />
       </div>
 
-      <h2 className="mb-2 text-2xl font-bold text-foreground">Enter verification code</h2>
+      <h2 className="mb-2 text-2xl font-bold text-foreground">{t('verify_title')}</h2>
       <p className="mb-8 text-sm text-muted-foreground leading-relaxed">
-        {"We've"} sent a 6-digit code to{' '}
+        {t('verify_subtitle_prefix')}{' '}
         <span className="font-medium text-foreground">{email}</span>
+        {t('verify_subtitle_suffix')}
       </p>
 
       <div className="mb-6 flex justify-center">
@@ -105,11 +108,11 @@ export function VerifyStep({ email, name, onVerified, onBack }: VerifyStepProps)
             onClick={handleResend}
             className="text-sm font-medium text-primary hover:underline"
           >
-            Resend code
+            {t('resend_code')}
           </button>
         ) : (
           <span className="text-sm text-muted-foreground">
-            Resend code in {countdown}s
+            {t('resend_in', { seconds: countdown })}
           </span>
         )}
       </div>
@@ -122,8 +125,8 @@ export function VerifyStep({ email, name, onVerified, onBack }: VerifyStepProps)
           disabled={loading}
           className="h-14 flex-1 rounded-2xl text-base font-medium"
         >
-          <ArrowLeft className="mr-1 h-5 w-5" />
-          Back
+          <ArrowLeft className="mr-1 h-5 w-5 rtl:rotate-180" />
+          {t('back')}
         </Button>
         <Button
           onClick={handleVerify}
@@ -134,7 +137,7 @@ export function VerifyStep({ email, name, onVerified, onBack }: VerifyStepProps)
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
             <>
-              Verify
+              {t('verify')}
               <ArrowRight className="ml-1 h-5 w-5" />
             </>
           )}

@@ -21,8 +21,10 @@ import { MealAnalysisDisplay } from '@/components/meal-analysis'
 import { OnboardingWizard } from '@/components/onboarding/onboarding-wizard'
 import { Dashboard } from '@/components/dashboard/dashboard'
 import { toast } from 'sonner'
+import { useTranslation } from '@/components/i18n/language-provider'
 
 export default function Home() {
+  const { t } = useTranslation()
   const router = useRouter()
   const [step, setStep] = useState<AppStep>('landing')
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -61,11 +63,11 @@ export default function Home() {
         setCurrentAnalysis(data.analysis)
         setStep('analysis')
       } else {
-        toast.error('Failed to analyze your meal. Please try again.')
+        toast.error(t('analysis_failed'))
         setStep('photo')
       }
     } catch {
-      toast.error('Something went wrong. Please try again.')
+      toast.error(t('generic_error'))
       setStep('photo')
     } finally {
       setIsAnalyzing(false)
@@ -79,7 +81,7 @@ export default function Home() {
 
   const handleAnalyzeAgain = async () => {
     if (!currentImage) {
-      toast.error('No meal image found. Please upload the photo again.')
+      toast.error(t('no_meal_image'))
       setStep('photo')
       return
     }
@@ -102,7 +104,7 @@ export default function Home() {
         saveMealToLog(mealWithTimestamp)
         await syncMealToSupabase(profile.email, mealWithTimestamp)
         clearPendingMeal()
-        toast.success('Meal saved to your daily log!')
+        toast.success(t('meal_saved'))
       }
       setStep('dashboard')
     } else {
@@ -126,9 +128,9 @@ export default function Home() {
       saveMealToLog(mealWithTimestamp)
       await syncMealToSupabase(completedProfile.email, mealWithTimestamp)
       clearPendingMeal()
-      toast.success('Profile created and meal saved!')
+      toast.success(t('profile_created_saved'))
     } else {
-      toast.success('Profile created! Start tracking your meals.')
+      toast.success(t('profile_created'))
     }
 
     setStep('dashboard')

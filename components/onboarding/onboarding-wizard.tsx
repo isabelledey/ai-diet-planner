@@ -6,6 +6,7 @@ import { VerifyStep } from './verify-step'
 import { ProfileStep } from './profile-step'
 import { Progress } from '@/components/ui/progress'
 import type { UserProfile } from '@/lib/types'
+import { useTranslation } from '@/components/i18n/language-provider'
 
 type OnboardingStep = 'email' | 'verify' | 'profile'
 
@@ -13,19 +14,19 @@ interface OnboardingWizardProps {
   onComplete: (profile: UserProfile) => void
 }
 
-const STEPS: { key: OnboardingStep; label: string }[] = [
-  { key: 'email', label: 'Email' },
-  { key: 'verify', label: 'Verify' },
-  { key: 'profile', label: 'Profile' },
-]
-
 export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
+  const { t } = useTranslation()
   const [step, setStep] = useState<OnboardingStep>('email')
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
+  const steps: { key: OnboardingStep; label: string }[] = [
+    { key: 'email', label: t('onboarding_step_email') },
+    { key: 'verify', label: t('onboarding_step_verify') },
+    { key: 'profile', label: t('onboarding_step_profile') },
+  ]
 
-  const currentIndex = STEPS.findIndex((s) => s.key === step)
-  const progressValue = ((currentIndex + 1) / STEPS.length) * 100
+  const currentIndex = steps.findIndex((s) => s.key === step)
+  const progressValue = ((currentIndex + 1) / steps.length) * 100
 
   const handleEmailSubmit = (payload: { email: string; name: string }) => {
     setEmail(payload.email)
@@ -46,7 +47,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       {/* Progress */}
       <div className="mb-2">
         <div className="mb-3 flex items-center justify-between">
-          {STEPS.map((s, i) => (
+          {steps.map((s, i) => (
             <span
               key={s.key}
               className={`text-xs font-medium ${

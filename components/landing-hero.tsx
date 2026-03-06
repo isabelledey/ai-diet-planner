@@ -2,12 +2,14 @@
 
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Sparkles, User, Zap } from "lucide-react";
+import { useTranslation } from '@/components/i18n/language-provider'
 
 interface LandingHeroProps {
   onStart: () => void;
 }
 
 export function LandingHero({ onStart }: LandingHeroProps) {
+  const { t } = useTranslation()
   return (
     <div className="relative flex min-h-[100dvh] flex-col items-center justify-center overflow-hidden bg-background px-6 py-12">
       {/* Decorative organic shapes */}
@@ -34,18 +36,17 @@ export function LandingHero({ onStart }: LandingHeroProps) {
         </div>
 
         <p className="mb-3 text-sm font-medium tracking-wide text-primary uppercase">
-          NutriSnap
+          {t('landing_brand')}
         </p>
 
         {/* Main headline */}
         <h1 className="mb-4 text-3xl font-bold leading-tight tracking-tight text-foreground text-balance">
-          {"Let's check your meal and build a daily plan together"}
+          {t('landing_title')}
         </h1>
 
         {/* Subtitle */}
         <p className="mb-10 text-base leading-relaxed text-muted-foreground text-pretty">
-          Snap a photo of your dish. {"We'll"} count the calories and suggest
-          what to eat next.
+          {t('landing_subtitle')}
         </p>
 
         {/* CTA Button */}
@@ -54,7 +55,7 @@ export function LandingHero({ onStart }: LandingHeroProps) {
           size="lg"
           className="h-14 w-full rounded-2xl bg-primary px-8 text-base font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 active:scale-[0.98]"
         >
-          {"Let's Start"}
+          {t('landing_start')}
           <ArrowRight className="ml-1 h-5 w-5" />
         </Button>
 
@@ -62,15 +63,15 @@ export function LandingHero({ onStart }: LandingHeroProps) {
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <span className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground">
             <Sparkles className="h-3 w-3 text-primary" />
-            AI-Powered
+            {t('landing_badge_ai')}
           </span>
           <span className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground">
             <User className="h-3 w-3 text-primary" />
-            Personalized Plan
+            {t('landing_badge_personalized')}
           </span>
           <span className="flex items-center gap-1.5 rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-secondary-foreground">
             <Zap className="h-3 w-3 text-primary" />
-            Instant Results
+            {t('landing_badge_instant')}
           </span>
         </div>
       </div>
