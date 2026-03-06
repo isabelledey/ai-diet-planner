@@ -64,3 +64,64 @@ export function getPendingMeal(): MealAnalysis | null {
 export function clearPendingMeal(): void {
   localStorage.removeItem(PENDING_MEAL_KEY)
 }
+
+export async function syncProfileToSupabase(profile: UserProfile): Promise<void> {
+  try {
+    await fetch('/api/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profile),
+    })
+  } catch {
+    // Keep local storage as fallback if network/db is unavailable.
+  }
+}
+
+export async function fetchDailyLogFromSupabase(email: string, date?: string): Promise<DailyLog | null> {
+  try {
+    const qs = new URLSearchParams({ email })
+    if (date) qs.set('date', date)
+    const res = await fetch(`/api/log?${qs.toString()}`)
+    if (!res.ok) return null
+    const data = await res.json()
+    if (!data.success) return null
+    return data.log as DailyLog
+  } catch {
+    return null
+  }
+}
+
+export async function syncMealToSupabase(
+  email: string,
+  meal: MealAnalysis,
+  date?: string,
+): Promise<MealAnalysis | null> {
+  try {
+    const res = await fetch('/api/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, meal, date }),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    if (!data.success) return null
+    return data.meal as MealAnalysis
+  } catch {
+    return null
+  }
+}
+
+export async function removeMealFromSupabase(mealId: string): Promise<boolean> {
+  try {
+    const res = await fetch('/api/log/meal', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mealId }),
+    })
+    if (!res.ok) return false
+    const data = await res.json()
+    return Boolean(data.success)
+  } catch {
+    return false
+  }
+}

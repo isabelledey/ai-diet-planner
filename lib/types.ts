@@ -8,6 +8,7 @@ export interface FoodItem {
 }
 
 export interface MealAnalysis {
+  id?: string
   name: string
   calories: number
   protein: number

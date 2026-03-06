@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import type { UserProfile, DailyLog, MealSuggestion, MealAnalysis } from '@/lib/types'
-import { getDailyLog, saveDailyLog, saveMealToLog } from '@/lib/store'
+import { getDailyLog, saveDailyLog, saveMealToLog, fetchDailyLogFromSupabase, syncMealToSupabase, removeMealFromSupabase } from '@/lib/store'
 import { getTotalConsumed, calculateRemainingCalories } from '@/lib/nutrition'
 import { CalorieRing } from './calorie-ring'
 import { MealCard } from './meal-card'
@@ -51,7 +51,22 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
     fetchSuggestions()
   }, [fetchSuggestions])
 
-  const handleAddSuggestion = (suggestion: MealSuggestion) => {
+  useEffect(() => {
+    let ignore = false
+    const loadFromSupabase = async () => {
+      const remoteLog = await fetchDailyLogFromSupabase(profile.email)
+      if (remoteLog && !ignore) {
+        saveDailyLog(remoteLog)
+        setDailyLog(remoteLog)
+      }
+    }
+    void loadFromSupabase()
+    return () => {
+      ignore = true
+    }
+  }, [profile.email])
+
+  const handleAddSuggestion = async (suggestion: MealSuggestion) => {
     const meal: MealAnalysis = {
       name: suggestion.name,
       calories: suggestion.calories,
@@ -73,13 +88,21 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
     }
 
     saveMealToLog(meal)
+    await syncMealToSupabase(profile.email, meal)
     const updatedLog = getDailyLog()
     setDailyLog(updatedLog)
     setSuggestions((prev) => prev.filter((s) => s.name !== suggestion.name))
     toast.success(`${suggestion.name} added to your log!`)
   }
 
-  const handleRemoveMeal = (mealIndex: number) => {
+  const handleRemoveMeal = async (mealIndex: number) => {
+    const mealToRemove = dailyLog.meals[mealIndex]
+    if (!mealToRemove) return
+
+    if (mealToRemove.id) {
+      await removeMealFromSupabase(mealToRemove.id)
+    }
+
     const updatedMeals = dailyLog.meals.filter((_, index) => index !== mealIndex)
     const updatedLog: DailyLog = { ...dailyLog, meals: updatedMeals }
     saveDailyLog(updatedLog)

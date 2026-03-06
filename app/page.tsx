@@ -2,7 +2,17 @@
 
 import { useState, useEffect } from 'react'
 import type { AppStep, UserProfile, MealAnalysis } from '@/lib/types'
-import { getUserProfile, saveUserProfile, isOnboarded, saveMealToLog, setPendingMeal, getPendingMeal, clearPendingMeal } from '@/lib/store'
+import {
+  getUserProfile,
+  saveUserProfile,
+  isOnboarded,
+  saveMealToLog,
+  setPendingMeal,
+  getPendingMeal,
+  clearPendingMeal,
+  syncProfileToSupabase,
+  syncMealToSupabase,
+} from '@/lib/store'
 import { LandingHero } from '@/components/landing-hero'
 import { PhotoCapture } from '@/components/photo-capture'
 import { MealAnalysisDisplay } from '@/components/meal-analysis'
@@ -81,7 +91,12 @@ export default function Home() {
     if (isOnboarded() && profile) {
       // Already onboarded, save directly
       if (currentAnalysis) {
-        saveMealToLog(currentAnalysis)
+        const mealWithTimestamp = {
+          ...currentAnalysis,
+          timestamp: currentAnalysis.timestamp || new Date().toISOString(),
+        }
+        saveMealToLog(mealWithTimestamp)
+        void syncMealToSupabase(profile.email, mealWithTimestamp)
         clearPendingMeal()
         toast.success('Meal saved to your daily log!')
       }
@@ -92,14 +107,20 @@ export default function Home() {
     }
   }
 
-  const handleOnboardingComplete = (completedProfile: UserProfile) => {
+  const handleOnboardingComplete = async (completedProfile: UserProfile) => {
     saveUserProfile(completedProfile)
     setProfile(completedProfile)
+    await syncProfileToSupabase(completedProfile)
 
     // Save any pending meal
     const pending = getPendingMeal()
     if (pending) {
-      saveMealToLog(pending)
+      const mealWithTimestamp = {
+        ...pending,
+        timestamp: pending.timestamp || new Date().toISOString(),
+      }
+      saveMealToLog(mealWithTimestamp)
+      await syncMealToSupabase(completedProfile.email, mealWithTimestamp)
       clearPendingMeal()
       toast.success('Profile created and meal saved!')
     } else {
