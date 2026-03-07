@@ -78,7 +78,7 @@ export default function NutritionPage() {
 
         if (!email) {
           setFoods([])
-          setErrorMessage('Error loading history.')
+          setErrorMessage('Could not load history. Please try again.')
           return
         }
 
@@ -92,15 +92,12 @@ export default function NutritionPage() {
         if (!res.ok || !payload?.success) {
           console.error('Supabase Error:', payload?.message ?? 'Failed to fetch /api/log')
           setFoods([])
-          setErrorMessage('Error loading history.')
+          setErrorMessage('Could not load history. Please try again.')
           return
         }
 
         const data = (payload?.log?.meals ?? []) as MealApiRow[]
-        console.log('Selected Date:', selectedDate)
-        console.log('Fetched Data:', data)
-        console.log('Raw JSON from Supabase:', data[0])
-
+        
         const mapped: FoodItem[] = data.map((item) => ({
           id: item.id ?? crypto.randomUUID(),
           name: item.name ?? 'Meal',
@@ -113,7 +110,7 @@ export default function NutritionPage() {
             ? new Date(item.timestamp ?? item.created_at ?? item.consumed_at ?? '').toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit',
-                hour12: false,
+                hour12: true,
               })
             : '--:--',
         }))
@@ -122,7 +119,7 @@ export default function NutritionPage() {
       } catch (error) {
         console.error('Supabase Error:', error instanceof Error ? error.message : String(error))
         setFoods([])
-        setErrorMessage('Error loading history.')
+        setErrorMessage('Could not load history. Please try again.')
       } finally {
         setIsLoading(false)
       }
@@ -147,124 +144,140 @@ export default function NutritionPage() {
   const totals = calculateTotals(foods)
 
   return (
-    <main className="mx-auto min-h-[100dvh] max-w-md bg-background">
-      <AppHeader
-        onGoBack={() => {
-          if (window.history.length > 1) {
-            router.back()
-          } else {
-            router.push('/')
-          }
-        }}
-      />
+    <div className="flex min-h-[100dvh] flex-col bg-background text-foreground">
+      {/* Header Navigation */}
+      <header className="sticky top-0 z-10 flex items-center justify-between border-b border-primary/10 bg-background/80 px-4 py-4 backdrop-blur-md">
+        <button
+          onClick={() => {
+            if (window.history.length > 1) {
+              router.back()
+            } else {
+              router.push('/')
+            }
+          }}
+          className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-primary/10"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <h1 className="text-lg font-bold">Nutrition History</h1>
+        <div className="h-10 w-10" /> {/* Empty div for flex spacing */}
+      </header>
 
-      <div className="px-4 pb-8 pt-20">
-        <div className="mb-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => {
-              if (window.history.length > 1) {
-                router.back()
-              } else {
-                router.push('/')
-              }
-            }}
-            className="rounded-xl"
-          >
-            Go Back
-          </Button>
-        </div>
-
-        <div className="mb-6 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => setWeekAnchorDate((prev) => subDays(prev, 7))}
-            className="rounded-lg p-2 hover:bg-secondary"
-            aria-label="Previous week"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-
-          <h1 className="text-lg font-semibold">{currentMonth}</h1>
-
-          <button
-            type="button"
-            onClick={() => setWeekAnchorDate((prev) => subDays(prev, -7))}
-            className="rounded-lg p-2 hover:bg-secondary"
-            aria-label="Next week"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="mb-6 grid grid-cols-7 gap-2">
-          {days.map((day) => {
-            const active = isSameDay(day.fullDate, selectedDate)
-            return (
-              <button
-                key={day.key}
-                type="button"
-                onClick={() => setSelectedDate(day.fullDate)}
-                className={`rounded-xl border px-1 py-2 text-center transition ${
-                  active
-                    ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border bg-card hover:bg-secondary'
-                }`}
-              >
-                <div className="text-[11px]">{day.label}</div>
-                <div className="text-sm font-semibold">{day.dateNumber}</div>
-              </button>
-            )
-          })}
-        </div>
-
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold">Meals</h2>
-          <span className="text-sm text-muted-foreground">{format(selectedDate, 'PPP')}</span>
-        </div>
-
-        {isLoading ? (
-          <div className="space-y-3">
-            <div className="h-20 animate-pulse rounded-xl bg-muted" />
-            <div className="h-20 animate-pulse rounded-xl bg-muted" />
-            <div className="h-20 animate-pulse rounded-xl bg-muted" />
-          </div>
-        ) : errorMessage ? (
-          <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-            Error loading history.
-          </div>
-        ) : foods.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-            No meals recorded for this date.
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {foods.map((food) => (
-              <div key={food.id} className="rounded-xl border border-border bg-card p-4">
-                <div className="mb-1 flex items-center justify-between">
-                  <p className="font-medium">{food.name}</p>
-                  <p className="text-sm text-muted-foreground">{food.time}</p>
+      <main className="flex-1 pb-24">
+        {/* Weekly Strip */}
+        <div className="overflow-x-auto whitespace-nowrap px-4 py-4 scrollbar-hide">
+          <div className="flex justify-between gap-3">
+            {days.map((day) => {
+              const active = isSameDay(day.fullDate, selectedDate)
+              return (
+                <div key={day.key} className="flex flex-col items-center gap-1">
+                  <span className="text-xs font-medium text-muted-foreground">{day.label}</span>
+                  <button
+                    onClick={() => setSelectedDate(day.fullDate)}
+                    className={`flex h-11 w-11 items-center justify-center rounded-full text-sm font-semibold transition ${
+                      active
+                        ? 'bg-primary text-primary-foreground'
+                        : 'text-foreground hover:bg-secondary'
+                    }`}
+                  >
+                    {day.dateNumber}
+                  </button>
                 </div>
-                <p className="mb-2 text-sm text-muted-foreground">{food.calories} kcal</p>
-                <div className="grid grid-cols-4 gap-2 text-xs text-muted-foreground">
-                  <span>P {food.protein}g</span>
-                  <span>F {food.fats}g</span>
-                  <span>C {food.carbs}g</span>
-                  <span>Fi {food.fiber}g</span>
-                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-3 gap-3 px-4 py-2">
+          <div className="rounded-xl border border-primary/20 bg-primary/10 p-3 dark:bg-primary/5">
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Calories
+            </p>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold">{totals.calories}</span>
+            </div>
+          </div>
+          <div className="rounded-xl border border-primary/20 bg-primary/10 p-3 dark:bg-primary/5">
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Protein
+            </p>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold">{totals.protein}g</span>
+            </div>
+          </div>
+          <div className="rounded-xl border border-primary/20 bg-primary/10 p-3 dark:bg-primary/5">
+            <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              Net Carbs
+            </p>
+            <div className="flex flex-col">
+              <span className="text-lg font-bold">{totals.carbs}g</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Meal Timeline */}
+        <div className="px-4 py-6">
+          <h2 className="mb-6 text-xl font-bold">Today's Meals</h2>
+          
+          <div className="relative space-y-8">
+            {/* Timeline Vertical Line */}
+            {foods.length > 0 && !isLoading && !errorMessage && (
+              <div className="absolute bottom-2 left-[20px] top-2 w-px bg-slate-200 dark:bg-slate-800" />
+            )}
+
+            {isLoading ? (
+              <div className="space-y-4">
+                <div className="h-24 animate-pulse rounded-xl bg-muted" />
+                <div className="h-24 animate-pulse rounded-xl bg-muted" />
               </div>
-            ))}
+            ) : errorMessage ? (
+              <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+                {errorMessage}
+              </div>
+            ) : foods.length === 0 ? (
+              <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+                No meals recorded for this date.
+              </div>
+            ) : (
+              foods.map((food, i) => (
+                <div key={food.id} className="relative pl-12">
+                  <div className="absolute left-0 top-1 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-primary/40 bg-primary/20 text-primary">
+                    <div className="h-2.5 w-2.5 rounded-full bg-primary" />
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="text-base font-bold">{food.name}</h3>
+                        <p className="text-sm text-muted-foreground">{food.time}</p>
+                      </div>
+                      <span className="rounded-full bg-primary/20 px-2 py-1 text-xs font-bold text-primary">
+                        {food.calories} kcal
+                      </span>
+                    </div>
+                    
+                    <div className="flex gap-3 overflow-hidden rounded-xl border border-border bg-card">
+                      <div className="flex flex-1 flex-col justify-center gap-1 p-3">
+                         <div className="flex gap-4 text-[11px] text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <div className="h-1.5 w-1.5 rounded-full bg-primary" /> P: {food.protein}g
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <div className="h-1.5 w-1.5 rounded-full bg-blue-400" /> C: {food.carbs}g
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <div className="h-1.5 w-1.5 rounded-full bg-orange-400" /> F: {food.fats}g
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-        )}
-
-        {!isLoading && !errorMessage && (
-          <div className="mt-6 rounded-xl border border-border bg-card p-4">
-            <p className="text-sm text-muted-foreground">Total Calories</p>
-            <p className="text-2xl font-bold">{totals.calories} kcal</p>
-          </div>
-        )}
-      </div>
-    </main>
+        </div>
+      </main>
+    </div>
   )
 }

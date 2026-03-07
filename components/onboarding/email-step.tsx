@@ -8,7 +8,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Mail, ArrowRight, Loader2 } from 'lucide-react'
 import { sendOTP } from '@/lib/auth'
 import { TermsModal } from '@/components/legal/terms-modal'
-import { useTranslation } from '@/components/i18n/language-provider'
 import type { AuthMode } from '@/lib/auth'
 import { toast } from 'sonner'
 
@@ -18,7 +17,6 @@ interface EmailStepProps {
 }
 
 export function EmailStep({ mode, onSubmit }: EmailStepProps) {
-  const { t } = useTranslation()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
@@ -54,11 +52,11 @@ export function EmailStep({ mode, onSubmit }: EmailStepProps) {
       </div>
 
       <h2 className="mb-2 text-2xl font-bold text-foreground">
-        {isSignUp ? t('email_title') : 'Sign in with your email'}
+        {isSignUp ? "What's your name and email?" : 'Sign in with your email'}
       </h2>
       <p className="mb-8 text-sm text-muted-foreground leading-relaxed">
         {isSignUp
-          ? t('email_subtitle')
+          ? "We'll send you a secure 6-digit code. No passwords required."
           : 'Enter your registered email and we will send your 6-digit sign-in code.'}
       </p>
 
@@ -66,12 +64,12 @@ export function EmailStep({ mode, onSubmit }: EmailStepProps) {
         {isSignUp && (
           <div className="flex flex-col gap-2">
             <Label htmlFor="name" className="text-sm font-medium text-foreground">
-              {t('full_name')}
+              Full Name
             </Label>
             <Input
               id="name"
               type="text"
-              placeholder={t('name_placeholder')}
+              placeholder="John Doe"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="h-12 rounded-xl text-base"
@@ -83,12 +81,12 @@ export function EmailStep({ mode, onSubmit }: EmailStepProps) {
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="email" className="text-sm font-medium text-foreground">
-            {t('email_address')}
+            Email Address
           </Label>
           <Input
             id="email"
             type="email"
-            placeholder={t('email_placeholder')}
+            placeholder="you@example.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="h-12 rounded-xl text-base"
@@ -106,7 +104,7 @@ export function EmailStep({ mode, onSubmit }: EmailStepProps) {
               className="mt-0.5"
             />
             <Label htmlFor="terms" className="text-sm font-normal leading-relaxed text-muted-foreground">
-              {t('terms_agree_prefix')}{' '}
+              I agree to the{' '}
               <button
                 type="button"
                 onClick={(e) => {
@@ -115,9 +113,9 @@ export function EmailStep({ mode, onSubmit }: EmailStepProps) {
                 }}
                 className="font-medium text-foreground underline underline-offset-4"
               >
-                {t('terms_agree_link')}
+                Terms of Service
               </button>
-              {t('terms_agree_suffix')}
+              and Privacy Policy.
             </Label>
           </div>
         )}
@@ -130,11 +128,11 @@ export function EmailStep({ mode, onSubmit }: EmailStepProps) {
           {loading ? (
             <>
               <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              {isSignUp ? t('sending_code') : 'Loading...'}
+              {isSignUp ? 'Sending code...' : 'Loading...'}
             </>
           ) : (
             <>
-              {t('get_code')}
+              Get Code
               <ArrowRight className="ml-1 h-5 w-5" />
             </>
           )}

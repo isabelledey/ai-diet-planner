@@ -21,7 +21,6 @@ import { OnboardingWizard } from '@/components/onboarding/onboarding-wizard'
 import { Dashboard } from '@/components/dashboard/dashboard'
 import { AppHeader } from '@/components/app-header'
 import { toast } from 'sonner'
-import { useTranslation } from '@/components/i18n/language-provider'
 import { createClient } from '@/lib/supabase/client'
 import type { AuthMode } from '@/lib/auth'
 
@@ -30,7 +29,6 @@ interface HomePageClientProps {
 }
 
 export function HomePageClient({ initialSessionEmail }: HomePageClientProps) {
-  const { t } = useTranslation()
   const router = useRouter()
   const [step, setStep] = useState<AppStep>('landing')
   const [profile, setProfile] = useState<UserProfile | null>(null)
@@ -110,7 +108,7 @@ export function HomePageClient({ initialSessionEmail }: HomePageClientProps) {
 
   const handleAnalyzeAgain = () => {
     if (!currentImage) {
-      toast.error(t('no_meal_image'))
+      toast.error('No meal image found. Please upload the photo again.')
     }
     setStep('photo')
   }
@@ -153,7 +151,7 @@ export function HomePageClient({ initialSessionEmail }: HomePageClientProps) {
           toast.error('Meal was saved locally but failed to sync to Supabase. Check console logs.')
         }
         clearPendingMeal()
-        toast.success(t('meal_saved'))
+        toast.success('Meal saved to your daily log!')
         setStep('dashboard')
         return
       }
@@ -189,9 +187,9 @@ export function HomePageClient({ initialSessionEmail }: HomePageClientProps) {
         toast.error('Meal was saved locally but failed to sync to Supabase. Check console logs.')
       }
       clearPendingMeal()
-      toast.success(isExistingUser ? t('meal_saved') : t('profile_created_saved'))
+      toast.success(isExistingUser ? 'Meal saved to your daily log!' : 'Profile created and meal saved!')
     } else if (!isExistingUser) {
-      toast.success(t('profile_created'))
+      toast.success('Profile created! Start tracking your meals.')
     }
 
     setStep('dashboard')

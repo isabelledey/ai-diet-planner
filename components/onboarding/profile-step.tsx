@@ -15,30 +15,28 @@ import {
 import { ArrowRight, Loader2, Target, TrendingDown, Dumbbell, Heart } from 'lucide-react'
 import type { UserProfile } from '@/lib/types'
 import { calculateDailyCalorieTarget } from '@/lib/nutrition'
-import { useTranslation } from '@/components/i18n/language-provider'
 
 interface ProfileStepProps {
   onComplete: (profile: UserProfile) => void
 }
 
 const GOALS = [
-  { value: 'lose_weight', labelKey: 'goal_lose_weight', descriptionKey: 'goal_lose_weight_desc', icon: TrendingDown },
-  { value: 'maintain', labelKey: 'goal_maintain', descriptionKey: 'goal_maintain_desc', icon: Target },
-  { value: 'build_muscle', labelKey: 'goal_build_muscle', descriptionKey: 'goal_build_muscle_desc', icon: Dumbbell },
-  { value: 'get_fit', labelKey: 'goal_get_fit', descriptionKey: 'goal_get_fit_desc', icon: Heart },
+  { value: 'lose_weight', label: 'Lose Weight', description: 'Caloric deficit for sustainable weight loss', icon: TrendingDown },
+  { value: 'maintain', label: 'Maintain Weight', description: 'Keep your current weight steady', icon: Target },
+  { value: 'build_muscle', label: 'Build Muscle', description: 'Slight surplus to support muscle growth', icon: Dumbbell },
+  { value: 'get_fit', label: 'Get Fit & Healthy', description: 'Focus on nutrition quality over calories', icon: Heart },
 ] as const
 
-const FOOD_PREF_KEYS = [
-  'pref_no_restrictions',
-  'pref_vegetarian',
-  'pref_vegan',
-  'pref_keto',
-  'pref_paleo',
-  'pref_gluten_free',
+const FOOD_PREF_OPTIONS = [
+  'No Restrictions',
+  'Vegetarian',
+  'Vegan',
+  'Keto',
+  'Paleo',
+  'Gluten Free',
 ] as const
 
 export function ProfileStep({ onComplete }: ProfileStepProps) {
-  const { t } = useTranslation()
   const [page, setPage] = useState<1 | 2 | 3>(1)
   const [loading, setLoading] = useState(false)
 
@@ -57,7 +55,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
   // Page 3: goal
   const [goal, setGoal] = useState<string>('')
 
-  const noRestrictions = t('pref_no_restrictions')
+  const noRestrictions = 'No Restrictions'
 
   const togglePref = (pref: string) => {
     if (pref === noRestrictions) {
@@ -117,15 +115,15 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
 
       {page === 1 && (
         <div className="flex flex-1 flex-col">
-          <h2 className="mb-1 text-2xl font-bold text-foreground">{t('profile_about_title')}</h2>
+          <h2 className="mb-1 text-2xl font-bold text-foreground">Tell us about yourself</h2>
           <p className="mb-6 text-sm text-muted-foreground">
-            {t('profile_about_subtitle')}
+            This helps us calculate your daily calorie target accurately.
           </p>
 
           <div className="flex flex-col gap-4">
             {/* Gender */}
             <div className="flex flex-col gap-2">
-              <Label className="text-sm font-medium text-foreground">{t('gender')}</Label>
+              <Label className="text-sm font-medium text-foreground">Gender</Label>
               <div className="grid grid-cols-3 gap-2">
                 {(['male', 'female', 'other'] as const).map((g) => (
                   <button
@@ -138,7 +136,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
                         : 'border-border bg-card text-foreground hover:bg-secondary'
                     }`}
                   >
-                    {g === 'male' ? t('male') : g === 'female' ? t('female') : t('other')}
+                    {g === 'male' ? 'Male' : g === 'female' ? 'Female' : 'Other'}
                   </button>
                 ))}
               </div>
@@ -146,11 +144,11 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
 
             {/* Age */}
             <div className="flex flex-col gap-2">
-              <Label htmlFor="age" className="text-sm font-medium text-foreground">{t('age')}</Label>
+              <Label htmlFor="age" className="text-sm font-medium text-foreground">Age</Label>
               <Input
                 id="age"
                 type="number"
-                placeholder={t('age_placeholder')}
+                placeholder="e.g. 28"
                 value={age}
                 onChange={(e) => setAge(e.target.value)}
                 className="h-12 rounded-xl text-base"
@@ -161,11 +159,11 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
 
             {/* Height */}
             <div className="flex flex-col gap-2">
-              <Label className="text-sm font-medium text-foreground">{t('height')}</Label>
+              <Label className="text-sm font-medium text-foreground">Height</Label>
               <div className="flex gap-2">
                 <Input
                   type="number"
-                  placeholder={heightUnit === 'cm' ? t('height_placeholder_cm') : t('height_placeholder_ft')}
+                  placeholder={heightUnit === 'cm' ? "175" : "5.8"}
                   value={height}
                   onChange={(e) => setHeight(e.target.value)}
                   className="h-12 flex-1 rounded-xl text-base"
@@ -196,11 +194,11 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
 
             {/* Weight */}
             <div className="flex flex-col gap-2">
-              <Label className="text-sm font-medium text-foreground">{t('weight')}</Label>
+              <Label className="text-sm font-medium text-foreground">Weight</Label>
               <div className="flex gap-2">
                 <Input
                   type="number"
-                  placeholder={weightUnit === 'kg' ? t('weight_placeholder_kg') : t('weight_placeholder_lbs')}
+                  placeholder={weightUnit === 'kg' ? "70" : "155"}
                   value={weight}
                   onChange={(e) => setWeight(e.target.value)}
                   className="h-12 flex-1 rounded-xl text-base"
@@ -236,7 +234,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
               disabled={!canProceed1}
               className="h-14 w-full rounded-2xl text-base font-semibold shadow-lg shadow-primary/20"
             >
-              {t('continue')}
+              Continue
               <ArrowRight className="ml-1 h-5 w-5" />
             </Button>
           </div>
@@ -245,38 +243,37 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
 
       {page === 2 && (
         <div className="flex flex-1 flex-col">
-          <h2 className="mb-1 text-2xl font-bold text-foreground">{t('profile_lifestyle_title')}</h2>
+          <h2 className="mb-1 text-2xl font-bold text-foreground">Your Lifestyle & Preferences</h2>
           <p className="mb-6 text-sm text-muted-foreground">
-            {t('profile_lifestyle_subtitle')}
+            How active are you, and what dietary preferences do you have?
           </p>
 
           <div className="flex flex-col gap-5">
             {/* Activity Level */}
             <div className="flex flex-col gap-2">
-              <Label className="text-sm font-medium text-foreground">{t('activity_level')}</Label>
+              <Label className="text-sm font-medium text-foreground">Activity Level</Label>
               <Select value={activityLevel} onValueChange={setActivityLevel}>
                 <SelectTrigger className="h-12 w-full rounded-xl text-base">
-                  <SelectValue placeholder={t('activity_placeholder')} />
+                  <SelectValue placeholder="Select your activity level" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="sedentary">{t('activity_sedentary')}</SelectItem>
-                  <SelectItem value="light">{t('activity_light')}</SelectItem>
-                  <SelectItem value="moderate">{t('activity_moderate')}</SelectItem>
-                  <SelectItem value="active">{t('activity_active')}</SelectItem>
-                  <SelectItem value="very_active">{t('activity_very_active')}</SelectItem>
+                  <SelectItem value="sedentary">Sedentary (little to no exercise)</SelectItem>
+                  <SelectItem value="light">Lightly Active (light exercise 1-3 days/week)</SelectItem>
+                  <SelectItem value="moderate">Moderately Active (exercise 3-5 days/week)</SelectItem>
+                  <SelectItem value="active">Active (hard exercise 6-7 days/week)</SelectItem>
+                  <SelectItem value="very_active">Very Active (very hard exercise, physical job)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {/* Food Preferences */}
             <div className="flex flex-col gap-2">
-              <Label className="text-sm font-medium text-foreground">{t('food_preferences')}</Label>
+              <Label className="text-sm font-medium text-foreground">Food Preferences</Label>
               <div className="flex flex-wrap gap-2">
-                {FOOD_PREF_KEYS.map((prefKey) => {
-                  const pref = t(prefKey)
+                {FOOD_PREF_OPTIONS.map((pref) => {
                   return (
                   <button
-                    key={prefKey}
+                    key={pref}
                     type="button"
                     onClick={() => togglePref(pref)}
                     className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
@@ -299,14 +296,14 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
               onClick={() => setPage(1)}
               className="h-14 flex-1 rounded-2xl text-base font-medium"
             >
-              {t('back')}
+              Back
             </Button>
             <Button
               onClick={() => setPage(3)}
               disabled={!canProceed2}
               className="h-14 flex-1 rounded-2xl text-base font-semibold shadow-lg shadow-primary/20"
             >
-              {t('continue')}
+              Continue
               <ArrowRight className="ml-1 h-5 w-5" />
             </Button>
           </div>
@@ -315,9 +312,9 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
 
       {page === 3 && (
         <div className="flex flex-1 flex-col">
-          <h2 className="mb-1 text-2xl font-bold text-foreground">{t('profile_goal_title')}</h2>
+          <h2 className="mb-1 text-2xl font-bold text-foreground">What's your primary goal?</h2>
           <p className="mb-6 text-sm text-muted-foreground">
-            {t('profile_goal_subtitle')}
+            We'll adjust your calorie target based on what you want to achieve.
           </p>
 
           <div className="flex flex-col gap-3">
@@ -344,8 +341,8 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
                     <Icon className={`h-6 w-6 ${goal === g.value ? 'text-primary' : 'text-muted-foreground'}`} />
                   </div>
                   <div>
-                    <p className="text-base font-semibold text-foreground">{t(g.labelKey)}</p>
-                    <p className="text-sm text-muted-foreground">{t(g.descriptionKey)}</p>
+                    <p className="text-base font-semibold text-foreground">{g.label}</p>
+                    <p className="text-sm text-muted-foreground">{g.description}</p>
                   </div>
                 </Card>
               )
@@ -358,7 +355,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
               onClick={() => setPage(2)}
               className="h-14 flex-1 rounded-2xl text-base font-medium"
             >
-              {t('back')}
+              Back
             </Button>
             <Button
               onClick={handleComplete}
@@ -369,7 +366,7 @@ export function ProfileStep({ onComplete }: ProfileStepProps) {
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <>
-                  {t('complete')}
+                  Complete Profile
                   <ArrowRight className="ml-1 h-5 w-5" />
                 </>
               )}

@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { ArrowRight, Flame, Beef, Wheat, Droplets, Leaf, Loader2, RotateCcw } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
-import { useTranslation } from '@/components/i18n/language-provider'
 
 interface MealAnalysisDisplayProps {
   analysis: MealAnalysis
@@ -29,7 +28,6 @@ export function MealAnalysisDisplay({
   onAnalyzeAgain,
   isAnalyzing = false,
 }: MealAnalysisDisplayProps) {
-  const { t } = useTranslation()
   const getGreeting = () => {
     const hour = new Date().getHours()
     if (hour >= 21 || hour < 5) return 'Good night'
@@ -39,9 +37,9 @@ export function MealAnalysisDisplay({
   }
 
   const macroData = [
-    { name: t('macro_protein'), value: analysis.protein, color: MACRO_COLORS.protein },
-    { name: t('macro_carbs'), value: analysis.carbs, color: MACRO_COLORS.carbs },
-    { name: t('macro_fat'), value: analysis.fat, color: MACRO_COLORS.fat },
+    { name: 'Protein', value: analysis.protein, color: MACRO_COLORS.protein },
+    { name: 'Carbs', value: analysis.carbs, color: MACRO_COLORS.carbs },
+    { name: 'Fat', value: analysis.fat, color: MACRO_COLORS.fat },
   ]
 
   const totalMacroGrams = analysis.protein + analysis.carbs + analysis.fat
@@ -52,14 +50,14 @@ export function MealAnalysisDisplay({
       <div className="mb-6">
         <p className="text-sm font-medium text-muted-foreground">{getGreeting()}</p>
         <h2 className="text-2xl font-bold text-foreground">{analysis.name}</h2>
-        <p className="text-sm text-muted-foreground">{t('analysis_found_title')}</p>
+        <p className="text-sm text-muted-foreground">We analyzed your meal and found:</p>
       </div>
 
       {/* Photo + Calorie Ring */}
       <div className="mb-6 flex items-center gap-4">
         {imageUrl && (
           <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-border">
-            <img src={imageUrl} alt={t('analysis_your_meal_alt')} className="h-full w-full object-cover" />
+            <img src={imageUrl} alt="Your meal photo" className="h-full w-full object-cover" />
           </div>
         )}
         <div className="flex flex-1 items-center gap-4">
@@ -84,7 +82,7 @@ export function MealAnalysisDisplay({
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-lg font-bold text-foreground leading-none">{analysis.calories}</span>
-              <span className="text-[10px] text-muted-foreground">{t('kcal_short')}</span>
+              <span className="text-[10px] text-muted-foreground">kcal</span>
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
@@ -101,11 +99,11 @@ export function MealAnalysisDisplay({
 
       {/* Macro breakdown bars */}
       <Card className="mb-4 rounded-2xl border-border bg-card p-4">
-        <h3 className="mb-3 text-sm font-semibold text-foreground">{t('nutritional_breakdown')}</h3>
+        <h3 className="mb-3 text-sm font-semibold text-foreground">Nutritional Breakdown</h3>
         <div className="flex flex-col gap-3">
           <MacroBar
             icon={<Beef className="h-4 w-4" />}
-            label={t('macro_protein')}
+            label="Protein"
             value={analysis.protein}
             total={totalMacroGrams}
             color={MACRO_COLORS.protein}
@@ -113,7 +111,7 @@ export function MealAnalysisDisplay({
           />
           <MacroBar
             icon={<Wheat className="h-4 w-4" />}
-            label={t('macro_carbs')}
+            label="Carbs"
             value={analysis.carbs}
             total={totalMacroGrams}
             color={MACRO_COLORS.carbs}
@@ -121,7 +119,7 @@ export function MealAnalysisDisplay({
           />
           <MacroBar
             icon={<Droplets className="h-4 w-4" />}
-            label={t('macro_fat')}
+            label="Fat"
             value={analysis.fat}
             total={totalMacroGrams}
             color={MACRO_COLORS.fat}
@@ -129,7 +127,7 @@ export function MealAnalysisDisplay({
           />
           <MacroBar
             icon={<Leaf className="h-4 w-4" />}
-            label={t('macro_fiber')}
+            label="Fiber"
             value={analysis.fiber}
             total={totalMacroGrams}
             color={MACRO_COLORS.fiber}
@@ -140,7 +138,7 @@ export function MealAnalysisDisplay({
 
       {/* Food items list */}
       <Card className="mb-6 rounded-2xl border-border bg-card p-4">
-        <h3 className="mb-3 text-sm font-semibold text-foreground">{t('detected_items')}</h3>
+        <h3 className="mb-3 text-sm font-semibold text-foreground">Detected Items</h3>
         <div className="flex flex-col gap-2.5">
           {analysis.items.map((item, i) => (
             <div key={i} className="flex items-center justify-between">
@@ -151,7 +149,7 @@ export function MealAnalysisDisplay({
                   <p className="text-xs text-muted-foreground">{item.portion}</p>
                 </div>
               </div>
-              <span className="text-sm font-semibold text-foreground">{item.calories} {t('kcal_short')}</span>
+              <span className="text-sm font-semibold text-foreground">{item.calories} kcal</span>
             </div>
           ))}
         </div>
@@ -168,12 +166,12 @@ export function MealAnalysisDisplay({
           {isAnalyzing ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              {t('reanalyzing')}
+              Reanalyzing...
             </>
           ) : (
             <>
               <RotateCcw className="mr-2 h-4 w-4" />
-              {t('analyze_again')}
+              Analyze Again
             </>
           )}
         </Button>
@@ -182,7 +180,7 @@ export function MealAnalysisDisplay({
           disabled={isAnalyzing}
           className="h-14 w-full rounded-2xl text-base font-semibold shadow-lg shadow-primary/20"
         >
-          {t('save_and_get_plan')}
+          Save & Get Plan
           <ArrowRight className="ml-1 h-5 w-5" />
         </Button>
       </div>

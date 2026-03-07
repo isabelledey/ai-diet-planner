@@ -1,7 +1,6 @@
 'use client'
 
 import { RadialBarChart, RadialBar, ResponsiveContainer, PolarAngleAxis } from 'recharts'
-import { useTranslation } from '@/components/i18n/language-provider'
 
 interface CalorieRingProps {
   consumed: number
@@ -9,7 +8,6 @@ interface CalorieRingProps {
 }
 
 export function CalorieRing({ consumed, target }: CalorieRingProps) {
-  const { t } = useTranslation()
   const safeTarget = Math.max(1, target)
   const clampedConsumed = Math.max(0, consumed)
   const remaining = Math.max(0, target - consumed)
@@ -46,7 +44,7 @@ export function CalorieRing({ consumed, target }: CalorieRingProps) {
       </ResponsiveContainer>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <span className="text-3xl font-bold text-foreground leading-none">{remaining}</span>
-        <span className="mt-1 text-xs font-medium text-muted-foreground">{t('kcal_remaining')}</span>
+        <span className="mt-1 text-xs font-medium text-muted-foreground">Calories remaining</span>
         <span className="mt-0.5 text-[10px] text-muted-foreground">
           {consumed} / {target}
         </span>

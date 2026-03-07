@@ -6,7 +6,6 @@ import { VerifyStep } from './verify-step'
 import { ProfileStep } from './profile-step'
 import { Progress } from '@/components/ui/progress'
 import type { UserProfile } from '@/lib/types'
-import { useTranslation } from '@/components/i18n/language-provider'
 import type { AuthMode } from '@/lib/auth'
 
 type OnboardingStep = 'email' | 'verify' | 'profile'
@@ -17,18 +16,17 @@ interface OnboardingWizardProps {
 }
 
 export function OnboardingWizard({ mode, onComplete }: OnboardingWizardProps) {
-  const { t } = useTranslation()
   const [step, setStep] = useState<OnboardingStep>('email')
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const signUpSteps: { key: OnboardingStep; label: string }[] = [
-    { key: 'email', label: t('onboarding_step_email') },
-    { key: 'verify', label: t('onboarding_step_verify') },
-    { key: 'profile', label: t('onboarding_step_profile') },
+    { key: 'email', label: 'Email' },
+    { key: 'verify', label: 'Verify' },
+    { key: 'profile', label: 'Profile' },
   ]
   const signInSteps: { key: OnboardingStep; label: string }[] = [
-    { key: 'email', label: t('onboarding_step_email') },
-    { key: 'verify', label: t('onboarding_step_verify') },
+    { key: 'email', label: 'Email' },
+    { key: 'verify', label: 'Verify' },
   ]
   const steps = mode === 'signup' ? signUpSteps : signInSteps
 

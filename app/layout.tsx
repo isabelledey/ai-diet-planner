@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Toaster } from 'sonner'
 import { Analytics } from '@vercel/analytics/next'
 import { Footer } from '@/components/footer'
-import { LanguageProvider } from '@/components/i18n/language-provider'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -46,16 +45,14 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" dir="ltr">
       <body className="font-sans antialiased">
-        <LanguageProvider>
-          <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col">
-            <div className="flex-1">{children}</div>
-            <Footer />
-          </div>
-          <Toaster position="top-center" richColors />
-          <Analytics />
-        </LanguageProvider>
+        <div className="relative mx-auto flex min-h-screen w-full max-w-md flex-col pt-12">
+          <div className="flex-1">{children}</div>
+          <Footer />
+        </div>
+        <Toaster position="top-center" richColors />
+        <Analytics />
       </body>
     </html>
   )

@@ -19,7 +19,6 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Camera, Beef, Wheat, Droplets, Leaf } from 'lucide-react'
 import { toast } from 'sonner'
-import { useTranslation } from '@/components/i18n/language-provider'
 
 interface DashboardProps {
   profile: UserProfile
@@ -29,7 +28,6 @@ interface DashboardProps {
 const DELETE_UNDO_MS = 5000
 
 export function Dashboard({ profile, onAddMeal }: DashboardProps) {
-  const { t } = useTranslation()
   const [dailyLog, setDailyLog] = useState<DailyLog>(getDailyLog())
   const [todayCalories, setTodayCalories] = useState(0)
   const [loadingTodayCalories, setLoadingTodayCalories] = useState(true)
@@ -158,7 +156,7 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
     const updatedLog = getDailyLog()
     setDailyLog(updatedLog)
     setSuggestions((prev) => prev.filter((s) => s.name !== suggestion.name))
-    toast.success(t('toast_meal_added', { meal: suggestion.name }))
+    toast.success(`Added ${suggestion.name} to your daily log!`)
   }
 
   const handleRemoveMeal = (mealIndex: number) => {
@@ -184,10 +182,10 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
 
     pendingDeleteTimers.current.set(deleteKey, timer)
 
-    toast(t('toast_meal_removed'), {
+    toast('Meal removed from log', {
       duration: DELETE_UNDO_MS,
       action: {
-        label: t('undo'),
+        label: 'Undo',
         onClick: () => {
           canceled = true
           const pendingTimer = pendingDeleteTimers.current.get(deleteKey)
@@ -226,9 +224,9 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
   const greeting = getGreeting()
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-background px-6 pb-24 pt-20">
+    <div dir="ltr" className="flex min-h-[100dvh] flex-col bg-background px-6 pb-24 pt-20">
       {/* Header */}
-      <div className="mb-6 flex flex-col justify-between gap-1">
+      <div className="mb-6 flex flex-col justify-between gap-1 text-left">
         <p className="text-sm font-medium text-muted-foreground">{today}</p>
         <h1 className="text-2xl font-bold text-foreground">
           {greeting}{profile.name ? `, ${profile.name}` : ''}!
@@ -258,7 +256,7 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
             <p className="mb-2 text-sm text-muted-foreground">No calories logged yet today.</p>
             <Button onClick={onAddMeal} className="rounded-xl">
               <Camera className="mr-2 h-4 w-4" />
-              {t('upload_image')}
+              Upload Image
             </Button>
           </Card>
         )}
@@ -268,33 +266,33 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
           <Card className="flex flex-col items-center rounded-2xl border-border bg-card p-3">
             <Beef className="mb-1 h-4 w-4" style={{ color: 'oklch(0.52 0.1 155)' }} />
             <span className="text-lg font-bold text-foreground">{consumed.protein}g</span>
-            <span className="text-[10px] text-muted-foreground">{t('macro_protein')}</span>
+            <span className="text-[10px] text-muted-foreground">Protein</span>
           </Card>
           <Card className="flex flex-col items-center rounded-2xl border-border bg-card p-3">
             <Wheat className="mb-1 h-4 w-4" style={{ color: 'oklch(0.75 0.14 75)' }} />
             <span className="text-lg font-bold text-foreground">{consumed.carbs}g</span>
-            <span className="text-[10px] text-muted-foreground">{t('macro_carbs')}</span>
+            <span className="text-[10px] text-muted-foreground">Carbs</span>
           </Card>
           <Card className="flex flex-col items-center rounded-2xl border-border bg-card p-3">
             <Droplets className="mb-1 h-4 w-4" style={{ color: 'oklch(0.72 0.14 40)' }} />
             <span className="text-lg font-bold text-foreground">{consumed.fat}g</span>
-            <span className="text-[10px] text-muted-foreground">{t('macro_fat')}</span>
+            <span className="text-[10px] text-muted-foreground">Fat</span>
           </Card>
           <Card className="flex flex-col items-center rounded-2xl border-border bg-card p-3">
             <Leaf className="mb-1 h-4 w-4" style={{ color: 'oklch(0.55 0.1 190)' }} />
             <span className="text-lg font-bold text-foreground">{consumed.fiber}g</span>
-            <span className="text-[10px] text-muted-foreground">{t('macro_fiber')}</span>
+            <span className="text-[10px] text-muted-foreground">Fiber</span>
           </Card>
         </div>
       </div>
 
       {/* Today's Meals */}
       <div className="mb-6">
-        <h2 className="mb-3 text-base font-semibold text-foreground">{t('today_meals')}</h2>
+        <h2 className="mb-3 text-base font-semibold text-foreground">Today's Meals</h2>
         {dailyLog.meals.length === 0 ? (
           <Card className="flex flex-col items-center gap-2 rounded-2xl border-border bg-card p-8 text-center">
-            <p className="text-sm text-muted-foreground">{t('no_meals_today')}</p>
-            <p className="text-xs text-muted-foreground">{t('snap_to_start')}</p>
+            <p className="text-sm text-muted-foreground">No meals logged today.</p>
+            <p className="text-xs text-muted-foreground">Snap a photo to start tracking.</p>
           </Card>
         ) : (
           <div className="flex flex-col gap-3">
@@ -307,7 +305,7 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
 
       {/* Suggested Next Meals */}
       <div className="mb-6">
-        <h2 className="mb-3 text-base font-semibold text-foreground">{t('suggested_meals')}</h2>
+        <h2 className="mb-3 text-base font-semibold text-foreground">Suggested Next Meals</h2>
         {loadingSuggestions ? (
           <div className="flex flex-col gap-3">
             {[1, 2].map((n) => (
@@ -319,8 +317,8 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
             <p className="text-sm text-muted-foreground">
               {consumed.calories >= profile.dailyCalorieTarget
                 || todayCalories >= profile.dailyCalorieTarget
-                ? t('goal_reached')
-                : t('no_suggestions')}
+                ? 'Daily goal reached!'
+                : 'No suggestions right now.'}
             </p>
           </Card>
         ) : (

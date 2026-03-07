@@ -5,6 +5,14 @@ export type TranslationKey =
   | 'upload_meal'
   | 'terms'
   | 'go_back'
+  | 'history'
+  | 'language_label'
+  | 'history_meals'
+  | 'history_total_calories'
+  | 'history_error_loading'
+  | 'history_no_meals'
+  | 'history_previous_week'
+  | 'history_next_week'
   | 'logout'
   | 'accessibility'
   | 'landing_brand'
@@ -152,6 +160,14 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     upload_meal: 'Upload Meal',
     terms: 'Terms of Use',
     go_back: 'Go Back',
+    history: 'Your Progress',
+    language_label: 'Language',
+    history_meals: 'Meals',
+    history_total_calories: 'Total Calories',
+    history_error_loading: 'Error loading history.',
+    history_no_meals: 'No meals recorded for this date.',
+    history_previous_week: 'Previous week',
+    history_next_week: 'Next week',
     logout: 'Log Out',
     accessibility: 'Accessibility',
     landing_brand: 'NutriSnap',
@@ -298,6 +314,14 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     upload_meal: 'העלאת ארוחה',
     terms: 'תנאי שימוש',
     go_back: 'חזרה',
+    history: 'ההתקדמות שלך',
+    language_label: 'שפה',
+    history_meals: 'ארוחות',
+    history_total_calories: 'סה״כ קלוריות',
+    history_error_loading: 'שגיאה בטעינת היסטוריה.',
+    history_no_meals: 'לא נרשמו ארוחות לתאריך זה.',
+    history_previous_week: 'שבוע קודם',
+    history_next_week: 'שבוע הבא',
     logout: 'התנתקות',
     accessibility: 'נגישות',
     landing_brand: 'נוטרי-סנאפ',
@@ -444,6 +468,14 @@ export const translations: Record<Language, Record<TranslationKey, string>> = {
     upload_meal: 'Загрузить блюдо',
     terms: 'Условия использования',
     go_back: 'Назад',
+    history: 'Ваш прогресс',
+    language_label: 'Язык',
+    history_meals: 'Блюда',
+    history_total_calories: 'Всего калорий',
+    history_error_loading: 'Ошибка загрузки истории.',
+    history_no_meals: 'За эту дату нет записанных блюд.',
+    history_previous_week: 'Предыдущая неделя',
+    history_next_week: 'Следующая неделя',
     logout: 'Выйти',
     accessibility: 'Доступность',
     landing_brand: 'NutriSnap',
