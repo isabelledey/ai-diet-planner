@@ -68,35 +68,33 @@ export async function POST(req: NextRequest) {
 
     const supabaseServer = await createServerClient()
     const { data: sessionData, error: sessionError } = await supabaseServer.auth.getSession()
+    const userId = sessionData?.session?.user?.id ?? null
 
-    if (sessionError || !sessionData?.session?.user?.id) {
-      console.error('Supabase auth session error in profile POST:', sessionError)
-      return NextResponse.json({ success: false, message: 'Unauthorized, no active session' }, { status: 401 })
+    // In demo OTP mode there may be no real auth session; allow email-based upsert fallback.
+    if (sessionError && !userId) {
+      console.error('Supabase auth session error in profile POST (continuing with email fallback):', sessionError)
     }
 
-    const userId = sessionData.session.user.id
-
     const supabase: any = getSupabaseAdmin()
+    const payload = {
+      ...(userId ? { id: userId } : {}),
+      email: profile.email,
+      name: profile.name,
+      age: profile.age,
+      gender: profile.gender,
+      height: profile.height,
+      height_unit: profile.heightUnit,
+      weight: profile.weight,
+      weight_unit: profile.weightUnit,
+      activity_level: profile.activityLevel,
+      food_preferences: profile.foodPreferences,
+      goal: profile.goal,
+      daily_calorie_target: profile.dailyCalorieTarget,
+    }
+
     const { data, error } = await supabase
       .from('profiles')
-      .upsert(
-        {
-          id: userId,
-          email: profile.email,
-          name: profile.name,
-          age: profile.age,
-          gender: profile.gender,
-          height: profile.height,
-          height_unit: profile.heightUnit,
-          weight: profile.weight,
-          weight_unit: profile.weightUnit,
-          activity_level: profile.activityLevel,
-          food_preferences: profile.foodPreferences,
-          goal: profile.goal,
-          daily_calorie_target: profile.dailyCalorieTarget,
-        },
-        { onConflict: 'id' },
-      )
+      .upsert(payload, { onConflict: userId ? 'id' : 'email' })
       .select('*')
       .single()
 

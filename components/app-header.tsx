@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { useTranslation } from "@/components/i18n/language-provider";
@@ -13,6 +14,7 @@ interface AppHeaderProps {
 
 export function AppHeader({ onLogout, showLogout = false, onGoBack }: AppHeaderProps) {
   const { t } = useTranslation()
+  const router = useRouter()
   const [isOpen, setIsOpen] = useState(false)
 
   return (
@@ -73,6 +75,18 @@ export function AppHeader({ onLogout, showLogout = false, onGoBack }: AppHeaderP
                   </p>
                   <LanguageSwitcher inMenu className="w-fit" />
                 </div>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-start rounded-xl"
+                  onClick={() => {
+                    setIsOpen(false)
+                    router.push('/history')
+                  }}
+                >
+                  History
+                </Button>
 
                 {showLogout && onLogout && (
                   <Button

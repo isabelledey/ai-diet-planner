@@ -30,6 +30,14 @@ export function MealAnalysisDisplay({
   isAnalyzing = false,
 }: MealAnalysisDisplayProps) {
   const { t } = useTranslation()
+  const getGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour >= 21 || hour < 5) return 'Good night'
+    if (hour < 12) return 'Good morning'
+    if (hour < 18) return 'Good afternoon'
+    return 'Good evening'
+  }
+
   const macroData = [
     { name: t('macro_protein'), value: analysis.protein, color: MACRO_COLORS.protein },
     { name: t('macro_carbs'), value: analysis.carbs, color: MACRO_COLORS.carbs },
@@ -42,6 +50,7 @@ export function MealAnalysisDisplay({
     <div className="flex min-h-[100dvh] flex-col bg-background px-6 pb-6 pt-20">
       {/* Header */}
       <div className="mb-6">
+        <p className="text-sm font-medium text-muted-foreground">{getGreeting()}</p>
         <h2 className="text-2xl font-bold text-foreground">{analysis.name}</h2>
         <p className="text-sm text-muted-foreground">{t('analysis_found_title')}</p>
       </div>

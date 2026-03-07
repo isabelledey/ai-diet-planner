@@ -44,7 +44,10 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
   const fetchTodayCalories = useCallback(async () => {
     setLoadingTodayCalories(true)
     const startOfDay = new Date()
-    startOfDay.setHours(0, 0, 0, 0)
+    if (startOfDay.getHours() < 5) {
+      startOfDay.setDate(startOfDay.getDate() - 1)
+    }
+    startOfDay.setHours(5, 0, 0, 0)
     const value = await fetchTodayCaloriesFromSupabase(profile.email, startOfDay.toISOString())
     if (typeof value === 'number') {
       setTodayCalories(value)
@@ -214,6 +217,7 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
 
   const getGreeting = () => {
     const hour = new Date().getHours()
+    if (hour >= 21 || hour < 5) return 'Good night'
     if (hour < 12) return 'Good morning'
     if (hour < 18) return 'Good afternoon'
     return 'Good evening'

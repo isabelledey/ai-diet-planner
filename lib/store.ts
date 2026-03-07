@@ -4,6 +4,22 @@ const PROFILE_KEY = 'nutrisnap_profile'
 const LOG_KEY_PREFIX = 'nutrisnap_log_'
 const PENDING_MEAL_KEY = 'nutrisnap_pending_meal'
 
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+export function getCurrentLogDate(now: Date = new Date()): string {
+  const resetBoundaryHour = 5
+  const effectiveDate = new Date(now)
+  if (effectiveDate.getHours() < resetBoundaryHour) {
+    effectiveDate.setDate(effectiveDate.getDate() - 1)
+  }
+  return formatLocalDate(effectiveDate)
+}
+
 export function getUserProfile(): UserProfile | null {
   if (typeof window === 'undefined') return null
   const data = localStorage.getItem(PROFILE_KEY)
@@ -19,19 +35,19 @@ export function isOnboarded(): boolean {
 }
 
 function getDateKey(date?: string): string {
-  const d = date || new Date().toISOString().split('T')[0]
+  const d = date || getCurrentLogDate()
   return `${LOG_KEY_PREFIX}${d}`
 }
 
 export function getDailyLog(date?: string): DailyLog {
   if (typeof window === 'undefined') {
-    return { date: date || new Date().toISOString().split('T')[0], meals: [], suggestions: [] }
+    return { date: date || getCurrentLogDate(), meals: [], suggestions: [] }
   }
   const key = getDateKey(date)
   const data = localStorage.getItem(key)
   if (data) return JSON.parse(data)
   return {
-    date: date || new Date().toISOString().split('T')[0],
+    date: date || getCurrentLogDate(),
     meals: [],
     suggestions: [],
   }
@@ -120,8 +136,9 @@ export async function syncProfileToSupabase(profile: UserProfile): Promise<boole
 
 export async function fetchDailyLogFromSupabase(email: string, date?: string): Promise<DailyLog | null> {
   try {
+    const logDate = date || getCurrentLogDate()
     const qs = new URLSearchParams({ email })
-    if (date) qs.set('date', date)
+    qs.set('date', logDate)
     const res = await fetch(`/api/log?${qs.toString()}`)
     const data = await res.json().catch(() => null)
     if (!res.ok || !data?.success) {
@@ -145,10 +162,11 @@ export async function syncMealToSupabase(
   date?: string,
 ): Promise<MealAnalysis | null> {
   try {
+    const logDate = date || getCurrentLogDate()
     const res = await fetch('/api/log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, meal, date }),
+      body: JSON.stringify({ email, meal, date: logDate }),
     })
     const data = await res.json().catch(() => null)
     if (!res.ok || !data?.success) {
