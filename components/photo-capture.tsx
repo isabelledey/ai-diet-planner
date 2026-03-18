@@ -341,23 +341,6 @@ export function PhotoCapture({ onMealAnalyzed, onBack, initialImageDataUrl = nul
                     )}
                   </button>
                 )}
-
-                {scanResult?.is_food && (
-                  <button
-                    onClick={handleCalculateMacros}
-                    disabled={isCalculating || !allQuestionsAnswered}
-                    className="flex h-14 w-full items-center justify-center rounded-xl bg-emerald-500 text-base font-bold text-white shadow-lg shadow-emerald-500/20 transition-transform active:scale-[0.98] disabled:opacity-50"
-                  >
-                    {isCalculating ? (
-                      <>
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                        Calculating macros...
-                      </>
-                    ) : (
-                      'Calculate Macros'
-                    )}
-                  </button>
-                )}
               </div>
 
               {/* Clarification Questions UI */}
@@ -400,6 +383,25 @@ export function PhotoCapture({ onMealAnalyzed, onBack, initialImageDataUrl = nul
                       </div>
                     )
                   })}
+                </div>
+              )}
+
+              {scanResult?.is_food && (
+                <div className="px-6 pb-6">
+                  <button
+                    onClick={handleCalculateMacros}
+                    disabled={isCalculating || !allQuestionsAnswered}
+                    className="flex h-14 w-full items-center justify-center rounded-xl bg-emerald-500 text-base font-bold text-white shadow-lg shadow-emerald-500/20 transition-transform active:scale-[0.98] disabled:opacity-50"
+                  >
+                    {isCalculating ? (
+                      <>
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        Calculating macros...
+                      </>
+                    ) : (
+                      'Calculate Macros'
+                    )}
+                  </button>
                 </div>
               )}
             </>

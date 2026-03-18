@@ -3,16 +3,25 @@
 import type { MealSuggestion } from '@/lib/types'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, Utensils } from 'lucide-react'
+import { Plus, Utensils, X } from 'lucide-react'
 
 interface SuggestionCardProps {
   suggestion: MealSuggestion
   onAdd: (suggestion: MealSuggestion) => void
+  onDelete: () => void
 }
 
-export function SuggestionCard({ suggestion, onAdd }: SuggestionCardProps) {
+export function SuggestionCard({ suggestion, onAdd, onDelete }: SuggestionCardProps) {
   return (
-    <Card className="flex flex-col gap-3 rounded-2xl border-border bg-card p-4">
+    <Card className="relative flex flex-col gap-3 rounded-2xl border-border bg-card p-4">
+      <button
+        type="button"
+        onClick={onDelete}
+        aria-label={`Delete ${suggestion.name}`}
+        className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+      >
+        <X className="h-4 w-4" />
+      </button>
       <div className="flex items-start gap-3">
         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
           <Utensils className="h-5 w-5 text-primary" />

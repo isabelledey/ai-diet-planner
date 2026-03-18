@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { getUserProfile } from "@/lib/store";
+import { History, House } from "lucide-react";
 
 interface AppHeaderProps {
   onLogout?: () => void
@@ -95,6 +97,15 @@ export function AppHeader({ onLogout, showLogout = false, onGoBack }: AppHeaderP
             <div className="absolute top-14 right-4 z-50 w-64 rounded-xl bg-white p-4 shadow-2xl border border-slate-100">
               <div className="space-y-2">
                 <div className="flex flex-col gap-2">
+                    <Link
+                      href="/"
+                      className="flex w-full items-center justify-start rounded-xl px-3 py-2 text-sm hover:bg-slate-50"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <House className="mr-2 h-4 w-4" />
+                      Home
+                    </Link>
+
                     <Button
                       type="button"
                       variant="ghost"
@@ -118,17 +129,16 @@ export function AppHeader({ onLogout, showLogout = false, onGoBack }: AppHeaderP
                     {isLoading ? (
                       <div className="h-9 w-full animate-pulse rounded-xl bg-slate-100" />
                     ) : isAuthenticated ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="w-full justify-start rounded-xl border-0 px-3 py-2 hover:bg-slate-50"
+                      <Link
+                        href="/history"
+                        className="flex w-full items-center justify-start rounded-xl px-3 py-2 text-sm hover:bg-slate-50"
                         onClick={() => {
                           setIsOpen(false)
-                          router.push('/history')
                         }}
                       >
+                        <History className="mr-2 h-4 w-4" />
                         My Progress
-                      </Button>
+                      </Link>
                     ) : null}
                 </div>
 

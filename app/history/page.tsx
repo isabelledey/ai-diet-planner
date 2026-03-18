@@ -5,8 +5,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { format, isSameDay, subDays } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { AppHeader } from '@/components/app-header'
 import { getUserProfile } from '@/lib/store'
 
 interface FoodItem {
@@ -41,8 +39,6 @@ export default function NutritionPage() {
   const [foods, setFoods] = useState<FoodItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
-  const currentMonth = useMemo(() => format(weekAnchorDate, 'MMMM yyyy'), [weekAnchorDate])
 
   const days = useMemo(() => {
     return Array.from({ length: 7 }, (_, i) => {
@@ -143,6 +139,20 @@ export default function NutritionPage() {
 
   const totals = calculateTotals(foods)
 
+  const handlePreviousWeek = () => {
+    const nextSelectedDate = subDays(selectedDate, 7)
+    const nextAnchorDate = subDays(weekAnchorDate, 7)
+    setSelectedDate(nextSelectedDate)
+    setWeekAnchorDate(nextAnchorDate)
+  }
+
+  const handleNextWeek = () => {
+    const nextSelectedDate = subDays(selectedDate, -7)
+    const nextAnchorDate = subDays(weekAnchorDate, -7)
+    setSelectedDate(nextSelectedDate)
+    setWeekAnchorDate(nextAnchorDate)
+  }
+
   return (
     <div className="flex min-h-[100dvh] flex-col bg-background text-foreground">
       {/* Header Navigation */}
@@ -166,11 +176,20 @@ export default function NutritionPage() {
       <main className="flex-1 pb-24">
         {/* Weekly Strip */}
         <div className="overflow-x-auto whitespace-nowrap px-4 py-4 scrollbar-hide">
-          <div className="flex justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handlePreviousWeek}
+              aria-label="Previous week"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/10 bg-background text-foreground shadow-sm transition-colors hover:bg-primary/5"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <div className="flex flex-1 gap-3 overflow-x-auto snap-x snap-mandatory scrollbar-hide">
             {days.map((day) => {
               const active = isSameDay(day.fullDate, selectedDate)
               return (
-                <div key={day.key} className="flex flex-col items-center gap-1">
+                <div key={day.key} className="flex shrink-0 snap-center flex-col items-center gap-1">
                   <span className="text-xs font-medium text-muted-foreground">{day.label}</span>
                   <button
                     onClick={() => setSelectedDate(day.fullDate)}
@@ -185,6 +204,15 @@ export default function NutritionPage() {
                 </div>
               )
             })}
+            </div>
+            <button
+              type="button"
+              onClick={handleNextWeek}
+              aria-label="Next week"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-primary/10 bg-background text-foreground shadow-sm transition-colors hover:bg-primary/5"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
         </div>
 

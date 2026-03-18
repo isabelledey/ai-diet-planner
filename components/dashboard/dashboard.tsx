@@ -17,7 +17,8 @@ import { MealCard } from './meal-card'
 import { SuggestionCard } from './suggestion-card'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Camera, Beef, Wheat, Droplets, Leaf } from 'lucide-react'
+import { Camera, Beef, Wheat, Droplets, Leaf, Loader2 } from 'lucide-react'
+import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 
 interface DashboardProps {
@@ -33,6 +34,8 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
   const [loadingTodayCalories, setLoadingTodayCalories] = useState(true)
   const [suggestions, setSuggestions] = useState<MealSuggestion[]>([])
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
+  const [customPrompt, setCustomPrompt] = useState('')
+  const [isRegenerating, setIsRegenerating] = useState(false)
   const pendingDeleteTimers = useRef<Map<string, number>>(new Map())
 
   const consumed = getTotalConsumed(dailyLog.meals)
@@ -207,6 +210,48 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
     })
   }
 
+  const deleteMeal = (mealIndex: number) => {
+    setSuggestions((prev) => prev.filter((_, index) => index !== mealIndex))
+  }
+
+  const handleGenerateNewMeal = async () => {
+    if (!customPrompt.trim()) {
+      toast.error('Enter a prompt before generating a new meal.')
+      return
+    }
+
+    setIsRegenerating(true)
+
+    try {
+      const res = await fetch('/api/meals/regenerate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customPrompt: customPrompt.trim(),
+          currentMeals: suggestions,
+        }),
+      })
+      const data = await res.json()
+
+      if (!res.ok || !data?.success || !data?.meal) {
+        toast.error(data?.message || 'Failed to generate a new meal suggestion.')
+        return
+      }
+
+      const regeneratedMeal: MealSuggestion = {
+        ...data.meal,
+        mealType: 'snack',
+      }
+
+      setSuggestions((prev) => [...prev, regeneratedMeal])
+      setCustomPrompt('')
+    } catch {
+      toast.error('Failed to generate a new meal suggestion.')
+    } finally {
+      setIsRegenerating(false)
+    }
+  }
+
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'short',
@@ -324,10 +369,46 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
         ) : (
           <div className="flex flex-col gap-3">
             {suggestions.map((s, i) => (
-              <SuggestionCard key={i} suggestion={s} onAdd={handleAddSuggestion} />
+              <SuggestionCard
+                key={i}
+                suggestion={s}
+                onAdd={handleAddSuggestion}
+                onDelete={() => deleteMeal(i)}
+              />
             ))}
           </div>
         )}
+
+        <Card className="mt-4 flex flex-col gap-3 rounded-2xl border-border bg-card p-4">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Generate something different</p>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Add a short prompt to steer the next meal suggestions.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Input
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              placeholder="Want something else? e.g. 'high protein vegan'"
+              className="h-11 rounded-xl"
+            />
+            <Button
+              onClick={handleGenerateNewMeal}
+              disabled={isRegenerating}
+              className="h-11 rounded-xl px-5"
+            >
+              {isRegenerating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Thinking...
+                </>
+              ) : (
+                'Generate'
+              )}
+            </Button>
+          </div>
+        </Card>
       </div>
 
     </div>
