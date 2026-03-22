@@ -1,6 +1,13 @@
 import { toast } from 'sonner'
 import type { UserProfile } from '@/lib/types'
 import { createClient } from '@/lib/supabase/client'
+import {
+  createDefaultDemoProfile,
+  DEMO_OTP,
+  isDevAuthBypassEnabled,
+  normalizeAuthEmail,
+  persistDemoSession,
+} from '@/lib/demo-session'
 
 export type VerifyOtpResult = {
   success: boolean
@@ -8,12 +15,54 @@ export type VerifyOtpResult = {
 }
 
 export type AuthMode = 'signup' | 'signin'
-const DEMO_OTP = '123456'
-const USE_DEMO_OTP = true
+
+const DEV_AUTH_EMAIL_KEY = 'demo_otp_email'
+const DEV_AUTH_MODE_KEY = 'demo_otp_mode'
+
+type ProfileLookupResult = {
+  exists: boolean
+  profile: UserProfile | null
+}
+
+async function fetchProfileByEmail(email: string): Promise<ProfileLookupResult> {
+  const res = await fetch(`/api/profile?email=${encodeURIComponent(email)}`, {
+    cache: 'no-store',
+  })
+  const data = await res.json().catch(() => null)
+
+  if (!res.ok || !data?.success) {
+    throw new Error(data?.message || 'Failed to load account details.')
+  }
+
+  return {
+    exists: Boolean(data?.profile),
+    profile: (data.profile as UserProfile | null) ?? null,
+  }
+}
+
+async function createDevSignupProfile(email: string, name: string): Promise<UserProfile> {
+  const profilePayload = createDefaultDemoProfile(email, { name })
+
+  const res = await fetch('/api/profile', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(profilePayload),
+  })
+  const data = await res.json().catch(() => null)
+
+  if (!res.ok || !data?.success || !data?.profile) {
+    throw new Error(data?.message || 'Failed to create your development profile.')
+  }
+
+  return data.profile as UserProfile
+}
 
 export async function sendOTP(email: string, name: string, mode: AuthMode = 'signup'): Promise<boolean> {
-  const normalizedEmail = email.trim().toLowerCase()
+  const normalizedEmail = normalizeAuthEmail(email)
   const trimmedName = name.trim()
+  const isDevBypassEnabled = isDevAuthBypassEnabled()
 
   if (!normalizedEmail) {
     toast.error('Email is required.')
@@ -26,46 +75,68 @@ export async function sendOTP(email: string, name: string, mode: AuthMode = 'sig
   }
 
   try {
-    const res = await fetch(`/api/profile?email=${encodeURIComponent(normalizedEmail)}`, {
-      cache: 'no-store',
-    })
-    const data = await res.json().catch(() => null)
+    const profileLookup = await fetchProfileByEmail(normalizedEmail)
+    const existingPendingEmail = localStorage.getItem(DEV_AUTH_EMAIL_KEY)
+    const existingPendingMode = localStorage.getItem(DEV_AUTH_MODE_KEY)
+    const isCurrentDevSignupAttempt =
+      isDevBypassEnabled &&
+      mode === 'signup' &&
+      existingPendingEmail === normalizedEmail &&
+      existingPendingMode === 'signup'
 
-    if (mode === 'signup' && res.ok && data?.success && data?.profile) {
-      toast.error('This email is already registered to NutriSnap. Please log in instead.')
-      return false
+    if (mode === 'signup' && profileLookup.exists && !isCurrentDevSignupAttempt) {
+      throw new Error('This email is already registered to NutriSnap. Please log in instead.')
     }
 
-    if (mode === 'signin' && (!res.ok || !data?.success || !data?.profile)) {
-      toast.error('No account found with this email. Please sign up first.')
-      return false
+    if (mode === 'signin' && !profileLookup.exists) {
+      throw new Error('Account not found. Please sign up first.')
+    }
+
+    if (isDevBypassEnabled) {
+      if (mode === 'signup' && !profileLookup.exists) {
+        await createDevSignupProfile(normalizedEmail, trimmedName)
+      }
+
+      localStorage.setItem(DEV_AUTH_EMAIL_KEY, normalizedEmail)
+      localStorage.setItem(DEV_AUTH_MODE_KEY, mode)
+      toast.success(`Dev Mode: enter ${DEMO_OTP}`)
+      return true
     }
   } catch (error) {
-    if (mode === 'signin') {
-      console.error('[Auth] Failed to verify sign-in email existence:', error)
-      toast.error('No account found with this email. Please sign up first.')
-      return false
+    console.error('[AUTH DEBUG]', error)
+    if (error instanceof Error) {
+      throw error
     }
+    throw new Error('Failed to start authentication. Please try again.')
   }
 
   const supabase = createClient()
-  if (USE_DEMO_OTP) {
-    localStorage.setItem('demo_otp_email', normalizedEmail)
-    localStorage.setItem('demo_otp_mode', mode)
-    toast.success(`Demo code: ${DEMO_OTP}`)
-    return true
-  }
+  const emailRedirectTo =
+    typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined
 
-  const { error } = await supabase.auth.signInWithOtp({
-    email: normalizedEmail,
-    options: {
-      ...(mode === 'signup' ? { data: { name: trimmedName } } : {}),
-    },
-  })
+  try {
+    const { error } = await supabase.auth.signInWithOtp({
+      email: normalizedEmail,
+      options: {
+        shouldCreateUser: mode === 'signup',
+        ...(emailRedirectTo ? { emailRedirectTo } : {}),
+        ...(mode === 'signup' ? { data: { name: trimmedName } } : {}),
+      },
+    })
 
-  if (error) {
-    console.error('[Auth] Supabase sendOTP error:', error)
-    toast.error(error.message || 'Failed to send verification code. Please try again.')
+    if (error) {
+      throw error
+    }
+  } catch (error) {
+    const authError = error as { message?: string; status?: number }
+    console.error('[AUTH DEBUG]', error)
+
+    if (authError.status === 429) {
+      toast.error('Rate limit reached. Please use the demo account.')
+      return false
+    }
+
+    toast.error(authError.message || 'Failed to send verification code. Please try again.')
     return false
   }
 
@@ -74,33 +145,57 @@ export async function sendOTP(email: string, name: string, mode: AuthMode = 'sig
 }
 
 export async function verifyOTP(email: string, code: string): Promise<VerifyOtpResult> {
-  const normalizedEmail = email.trim().toLowerCase()
+  const normalizedEmail = normalizeAuthEmail(email)
   const token = code.trim()
+  const isDevBypassEnabled = isDevAuthBypassEnabled()
 
   if (!normalizedEmail || token.length !== 6) {
     toast.error('Invalid verification code.')
     return { success: false, profile: null }
   }
 
-  const supabase = createClient()
-  if (USE_DEMO_OTP) {
-    const storedEmail = localStorage.getItem('demo_otp_email')
+  if (isDevBypassEnabled) {
+    const storedEmail = localStorage.getItem(DEV_AUTH_EMAIL_KEY)
     if (storedEmail !== normalizedEmail || token !== DEMO_OTP) {
       toast.error('Invalid verification code.')
       return { success: false, profile: null }
     }
-    localStorage.removeItem('demo_otp_email')
-    localStorage.removeItem('demo_otp_mode')
-  } else {
-    const { error } = await supabase.auth.verifyOtp({
-      email: normalizedEmail,
-      token,
-      type: 'email',
-    })
 
-    if (error) {
-      console.error('[Auth] Supabase verifyOtp error:', error)
-      toast.error(error.message || 'Invalid verification code.')
+    localStorage.removeItem(DEV_AUTH_EMAIL_KEY)
+    localStorage.removeItem(DEV_AUTH_MODE_KEY)
+    persistDemoSession(normalizedEmail)
+  } else {
+    const supabase = createClient()
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: normalizedEmail,
+        token,
+        type: 'email',
+      })
+
+      if (error) {
+        throw error
+      }
+    } catch (error) {
+      const authError = error as { message?: string; status?: number }
+      console.error('[AUTH DEBUG]', error)
+
+      if (authError.status === 429) {
+        toast.error('Rate limit reached. Please use the demo account.')
+        return { success: false, profile: null }
+      }
+
+      toast.error(authError.message || 'Invalid verification code.')
+      return { success: false, profile: null }
+    }
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession()
+
+    if (!session) {
+      console.error('[Auth] verifyOtp succeeded but no Supabase session cookie was established.')
+      toast.error('Verification succeeded, but no session was created. Please try again.')
       return { success: false, profile: null }
     }
   }
@@ -108,17 +203,17 @@ export async function verifyOTP(email: string, code: string): Promise<VerifyOtpR
   toast.success('Email verified!')
 
   try {
-    const res = await fetch(`/api/profile?email=${encodeURIComponent(normalizedEmail)}`, {
-      cache: 'no-store',
-    })
-    const data = await res.json().catch(() => null)
+    const profileLookup = await fetchProfileByEmail(normalizedEmail)
 
-    if (!res.ok || !data?.success) {
-      return { success: true, profile: null }
+    return {
+      success: true,
+      profile: profileLookup.profile ?? (isDevBypassEnabled ? createDefaultDemoProfile(normalizedEmail) : null),
     }
-
-    return { success: true, profile: (data.profile as UserProfile | null) ?? null }
-  } catch {
-    return { success: true, profile: null }
+  } catch (error) {
+    console.error('[AUTH DEBUG]', error)
+    return {
+      success: true,
+      profile: isDevBypassEnabled ? createDefaultDemoProfile(normalizedEmail) : null,
+    }
   }
 }

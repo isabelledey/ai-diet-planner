@@ -11,9 +11,17 @@ interface SuggestionCardProps {
   onDelete: () => void
 }
 
+const FALLBACK_FOOD_IMAGE_URL = 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg'
+
 export function SuggestionCard({ suggestion, onAdd, onDelete }: SuggestionCardProps) {
   return (
-    <Card className="relative flex flex-col gap-3 rounded-2xl border-border bg-card p-4">
+    <Card className="relative overflow-hidden rounded-2xl border-border bg-card">
+      <img
+        src={suggestion.imageUrl || FALLBACK_FOOD_IMAGE_URL}
+        alt={suggestion.name}
+        className="h-40 w-full object-cover"
+      />
+      <div className="flex flex-col gap-3 p-4">
       <button
         type="button"
         onClick={onDelete}
@@ -54,6 +62,7 @@ export function SuggestionCard({ suggestion, onAdd, onDelete }: SuggestionCardPr
           <Plus className="mr-1 h-3.5 w-3.5" />
           Add
         </Button>
+      </div>
       </div>
     </Card>
   )

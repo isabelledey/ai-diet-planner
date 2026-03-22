@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import { getUserProfile } from "@/lib/store";
-import { History, House } from "lucide-react";
+import { Camera, History, LayoutDashboard } from "lucide-react";
 
 interface AppHeaderProps {
   onLogout?: () => void
@@ -98,12 +98,21 @@ export function AppHeader({ onLogout, showLogout = false, onGoBack }: AppHeaderP
               <div className="space-y-2">
                 <div className="flex flex-col gap-2">
                     <Link
-                      href="/"
+                      href="/dashboard"
                       className="flex w-full items-center justify-start rounded-xl px-3 py-2 text-sm hover:bg-slate-50"
                       onClick={() => setIsOpen(false)}
                     >
-                      <House className="mr-2 h-4 w-4" />
-                      Home
+                      <LayoutDashboard className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </Link>
+
+                    <Link
+                      href="/analyze"
+                      className="flex w-full items-center justify-start rounded-xl px-3 py-2 text-sm hover:bg-slate-50"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <Camera className="mr-2 h-4 w-4" />
+                      Analyze
                     </Link>
 
                     <Button
@@ -119,7 +128,7 @@ export function AppHeader({ onLogout, showLogout = false, onGoBack }: AppHeaderP
                         if (window.history.length > 1) {
                           router.back()
                         } else {
-                          router.push('/')
+                          router.push('/dashboard')
                         }
                       }}
                     >

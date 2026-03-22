@@ -38,6 +38,8 @@ export interface MealSuggestion {
   protein: number
   carbs: number
   fat: number
+  imageUrl?: string
+  imageKeyword?: string
   mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack'
 }
 

@@ -9,7 +9,6 @@ import {
   fetchDailyLogFromSupabase,
   syncMealToSupabase,
   removeMealFromSupabase,
-  fetchTodayCaloriesFromSupabase,
 } from '@/lib/store'
 import { getTotalConsumed, calculateRemainingCalories } from '@/lib/nutrition'
 import { CalorieRing } from './calorie-ring'
@@ -30,8 +29,6 @@ const DELETE_UNDO_MS = 5000
 
 export function Dashboard({ profile, onAddMeal }: DashboardProps) {
   const [dailyLog, setDailyLog] = useState<DailyLog>(getDailyLog())
-  const [todayCalories, setTodayCalories] = useState(0)
-  const [loadingTodayCalories, setLoadingTodayCalories] = useState(true)
   const [suggestions, setSuggestions] = useState<MealSuggestion[]>([])
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
@@ -39,22 +36,7 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
   const pendingDeleteTimers = useRef<Map<string, number>>(new Map())
 
   const consumed = getTotalConsumed(dailyLog.meals)
-  const effectiveConsumedCalories = todayCalories > 0 ? todayCalories : consumed.calories
-  const remaining = calculateRemainingCalories(profile.dailyCalorieTarget, effectiveConsumedCalories)
-
-  const fetchTodayCalories = useCallback(async () => {
-    setLoadingTodayCalories(true)
-    const startOfDay = new Date()
-    if (startOfDay.getHours() < 5) {
-      startOfDay.setDate(startOfDay.getDate() - 1)
-    }
-    startOfDay.setHours(5, 0, 0, 0)
-    const value = await fetchTodayCaloriesFromSupabase(profile.email, startOfDay.toISOString())
-    if (typeof value === 'number') {
-      setTodayCalories(value)
-    }
-    setLoadingTodayCalories(false)
-  }, [profile.email])
+  const remaining = calculateRemainingCalories(profile.dailyCalorieTarget, consumed.calories)
 
   const fetchSuggestions = useCallback(async () => {
     setLoadingSuggestions(true)
@@ -67,7 +49,7 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
           preferences: profile.foodPreferences,
           profile,
           consumedToday: {
-            calories: effectiveConsumedCalories,
+            calories: consumed.calories,
             protein: consumed.protein,
             carbs: consumed.carbs,
             fat: consumed.fat,
@@ -87,7 +69,7 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
   }, [
     remaining,
     profile,
-    effectiveConsumedCalories,
+    consumed.calories,
     consumed.protein,
     consumed.carbs,
     consumed.fat,
@@ -97,10 +79,6 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
   useEffect(() => {
     fetchSuggestions()
   }, [fetchSuggestions])
-
-  useEffect(() => {
-    void fetchTodayCalories()
-  }, [fetchTodayCalories, dailyLog.meals.length])
 
   useEffect(() => {
     let ignore = false
@@ -283,11 +261,9 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
 
       {/* Calorie ring section */}
       <div className="mb-6 flex flex-col items-center">
-        {loadingTodayCalories ? (
-          <Card className="w-full max-w-xs animate-pulse rounded-2xl border-border bg-muted p-12" />
-        ) : todayCalories > 0 ? (
+        {dailyLog.meals.length > 0 ? (
           <>
-            <CalorieRing consumed={todayCalories} target={profile.dailyCalorieTarget} />
+            <CalorieRing consumed={consumed.calories} target={profile.dailyCalorieTarget} />
             <Button
               onClick={onAddMeal}
               variant="outline"
@@ -361,7 +337,6 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
           <Card className="flex flex-col items-center gap-2 rounded-2xl border-border bg-card p-6 text-center">
             <p className="text-sm text-muted-foreground">
               {consumed.calories >= profile.dailyCalorieTarget
-                || todayCalories >= profile.dailyCalorieTarget
                 ? 'Daily goal reached!'
                 : 'No suggestions right now.'}
             </p>

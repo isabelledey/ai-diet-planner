@@ -6,6 +6,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp
 import { ArrowLeft, ArrowRight, Loader2, ShieldCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import { sendOTP, verifyOTP } from '@/lib/auth'
+import { DEMO_OTP, isDevAuthBypassEnabled } from '@/lib/demo-session'
 import type { UserProfile } from '@/lib/types'
 import type { AuthMode } from '@/lib/auth'
 
@@ -22,6 +23,7 @@ export function VerifyStep({ mode, email, name, onVerified, onBack }: VerifyStep
   const [loading, setLoading] = useState(false)
   const [countdown, setCountdown] = useState(30)
   const [canResend, setCanResend] = useState(false)
+  const showDevBypassHint = isDevAuthBypassEnabled()
 
   useEffect(() => {
     if (countdown <= 0) {
@@ -43,8 +45,8 @@ export function VerifyStep({ mode, email, name, onVerified, onBack }: VerifyStep
       } else {
         setCode('')
       }
-    } catch {
-      toast.error('Something went wrong. Please try again.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -58,8 +60,8 @@ export function VerifyStep({ mode, email, name, onVerified, onBack }: VerifyStep
       if (!sent) {
         setCanResend(true)
       }
-    } catch {
-      toast.error('Failed to resend code. Please try again.')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to resend code. Please try again.')
       setCanResend(true)
     }
   }
@@ -83,6 +85,12 @@ export function VerifyStep({ mode, email, name, onVerified, onBack }: VerifyStep
         <span className="font-medium text-foreground">{email}</span>
         . Please enter it below to verify your account.
       </p>
+
+      {showDevBypassHint && (
+        <div className="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+          Dev Mode: enter {DEMO_OTP}
+        </div>
+      )}
 
       <div className="mb-6 flex justify-center">
         <InputOTP

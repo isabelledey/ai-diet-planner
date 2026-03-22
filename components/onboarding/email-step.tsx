@@ -38,7 +38,7 @@ export function EmailStep({ mode, onSubmit }: EmailStepProps) {
       }
     } catch (error) {
       console.error('[Sign In] Failed to get OTP code:', error)
-      toast.error('Failed to send verification code. Please try again.')
+      toast.error(error instanceof Error ? error.message : 'Failed to send verification code. Please try again.')
     } finally {
       setLoading(false)
     }

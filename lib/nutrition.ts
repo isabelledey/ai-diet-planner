@@ -183,12 +183,12 @@ export function getMockSuggestions(
       mealType: 'snack',
     },
     {
-      name: 'Protein Smoothie',
-      description: 'Banana, spinach, protein powder, and almond milk',
-      calories: 250,
-      protein: 22,
-      carbs: 30,
-      fat: 5,
+      name: 'Cottage Cheese Bowl',
+      description: 'Cottage cheese with apple slices, walnuts, and cinnamon',
+      calories: 260,
+      protein: 21,
+      carbs: 19,
+      fat: 11,
       mealType: 'snack',
     },
   ]

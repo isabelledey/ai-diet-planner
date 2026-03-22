@@ -162,7 +162,7 @@ export default function NutritionPage() {
             if (window.history.length > 1) {
               router.back()
             } else {
-              router.push('/')
+              router.push('/dashboard')
             }
           }}
           className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-primary/10"

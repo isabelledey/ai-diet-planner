@@ -1,25 +1,40 @@
-'use client'
+"use client";
 
-import type { MealAnalysis } from '@/lib/types'
-import { Button } from '@/components/ui/button'
-import { Card } from '@/components/ui/card'
-import { ArrowRight, Flame, Beef, Wheat, Droplets, Leaf, Loader2, RotateCcw } from 'lucide-react'
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts'
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import type { MealAnalysis } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import {
+  ArrowRight,
+  Flame,
+  Beef,
+  Wheat,
+  Droplets,
+  Leaf,
+  Loader2,
+  RotateCcw,
+} from "lucide-react";
+import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
+import { createClient } from "@/lib/supabase/client";
+import { getDemoSessionEmailFromBrowser } from "@/lib/demo-session";
+import { getUserProfile, saveMealToLog, syncMealToSupabase } from "@/lib/store";
+import { toast } from "sonner";
 
 interface MealAnalysisDisplayProps {
-  analysis: MealAnalysis
-  imageUrl?: string
-  onContinue: () => void
-  onAnalyzeAgain: () => void
-  isAnalyzing?: boolean
+  analysis: MealAnalysis;
+  imageUrl?: string;
+  onContinue: () => void;
+  onAnalyzeAgain: () => void;
+  isAnalyzing?: boolean;
 }
 
 const MACRO_COLORS = {
-  protein: 'oklch(0.52 0.1 155)',
-  carbs: 'oklch(0.75 0.14 75)',
-  fat: 'oklch(0.72 0.14 40)',
-  fiber: 'oklch(0.55 0.1 190)',
-}
+  protein: "oklch(0.52 0.1 155)",
+  carbs: "oklch(0.75 0.14 75)",
+  fat: "oklch(0.72 0.14 40)",
+  fiber: "oklch(0.55 0.1 190)",
+};
 
 export function MealAnalysisDisplay({
   analysis,
@@ -28,36 +43,129 @@ export function MealAnalysisDisplay({
   onAnalyzeAgain,
   isAnalyzing = false,
 }: MealAnalysisDisplayProps) {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isSavingToLog, setIsSavingToLog] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    const supabase = createClient();
+
+    const checkAuthState = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (mounted) {
+        setIsAuthenticated(
+          !!session || !!getUserProfile() || !!getDemoSessionEmailFromBrowser(),
+        );
+      }
+    };
+
+    void checkAuthState();
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) {
+        setIsAuthenticated(
+          !!session || !!getUserProfile() || !!getDemoSessionEmailFromBrowser(),
+        );
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
   const getGreeting = () => {
-    const hour = new Date().getHours()
-    if (hour >= 21 || hour < 5) return 'Good night'
-    if (hour < 12) return 'Good morning'
-    if (hour < 18) return 'Good afternoon'
-    return 'Good evening'
-  }
+    const hour = new Date().getHours();
+    if (hour >= 21 || hour < 5) return "Good night";
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
+  const handleAddToLogAndViewDashboard = async () => {
+    setIsSavingToLog(true);
+
+    try {
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const profile = getUserProfile();
+      const email =
+        profile?.email ||
+        getDemoSessionEmailFromBrowser() ||
+        session?.user?.email;
+
+      if (!email) {
+        toast.error("You are not signed in. Please try again.");
+        return;
+      }
+
+      const mealWithTimestamp = {
+        ...analysis,
+        timestamp: analysis.timestamp || new Date().toISOString(),
+      };
+
+      // Save locally
+      saveMealToLog(mealWithTimestamp);
+
+      // Sync to Supabase
+      const mealSynced = await syncMealToSupabase(email, mealWithTimestamp);
+
+      if (!mealSynced) {
+        console.warn("Meal saved locally, but background sync failed.");
+      } else {
+        toast.success("Meal added to your daily log!");
+      }
+
+      // Route directly to the dashboard
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      toast.error("Failed to save meal to your log.");
+    } finally {
+      setIsSavingToLog(false);
+    }
+  };
 
   const macroData = [
-    { name: 'Protein', value: analysis.protein, color: MACRO_COLORS.protein },
-    { name: 'Carbs', value: analysis.carbs, color: MACRO_COLORS.carbs },
-    { name: 'Fat', value: analysis.fat, color: MACRO_COLORS.fat },
-  ]
+    { name: "Protein", value: analysis.protein, color: MACRO_COLORS.protein },
+    { name: "Carbs", value: analysis.carbs, color: MACRO_COLORS.carbs },
+    { name: "Fat", value: analysis.fat, color: MACRO_COLORS.fat },
+  ];
 
-  const totalMacroGrams = analysis.protein + analysis.carbs + analysis.fat
+  const totalMacroGrams = analysis.protein + analysis.carbs + analysis.fat;
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-background px-6 pb-6 pt-20">
       {/* Header */}
       <div className="mb-6">
-        <p className="text-sm font-medium text-muted-foreground">{getGreeting()}</p>
+        <p className="text-sm font-medium text-muted-foreground">
+          {getGreeting()}
+        </p>
         <h2 className="text-2xl font-bold text-foreground">{analysis.name}</h2>
-        <p className="text-sm text-muted-foreground">We analyzed your meal and found:</p>
+        <p className="text-sm text-muted-foreground">
+          We analyzed your meal and found:
+        </p>
       </div>
 
       {/* Photo + Calorie Ring */}
       <div className="mb-6 flex items-center gap-4">
         {imageUrl && (
           <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl border border-border">
-            <img src={imageUrl} alt="Your meal photo" className="h-full w-full object-cover" />
+            <img
+              src={imageUrl}
+              alt="Your meal photo"
+              className="h-full w-full object-cover"
+            />
           </div>
         )}
         <div className="flex flex-1 items-center gap-4">
@@ -81,16 +189,25 @@ export function MealAnalysisDisplay({
               </PieChart>
             </ResponsiveContainer>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-lg font-bold text-foreground leading-none">{analysis.calories}</span>
+              <span className="text-lg font-bold text-foreground leading-none">
+                {analysis.calories}
+              </span>
               <span className="text-[10px] text-muted-foreground">kcal</span>
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
             {macroData.map((macro) => (
               <div key={macro.name} className="flex items-center gap-2">
-                <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: macro.color }} />
-                <span className="text-xs text-muted-foreground">{macro.name}</span>
-                <span className="text-xs font-semibold text-foreground">{macro.value}g</span>
+                <div
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: macro.color }}
+                />
+                <span className="text-xs text-muted-foreground">
+                  {macro.name}
+                </span>
+                <span className="text-xs font-semibold text-foreground">
+                  {macro.value}g
+                </span>
               </div>
             ))}
           </div>
@@ -99,7 +216,9 @@ export function MealAnalysisDisplay({
 
       {/* Macro breakdown bars */}
       <Card className="mb-4 rounded-2xl border-border bg-card p-4">
-        <h3 className="mb-3 text-sm font-semibold text-foreground">Nutritional Breakdown</h3>
+        <h3 className="mb-3 text-sm font-semibold text-foreground">
+          Nutritional Breakdown
+        </h3>
         <div className="flex flex-col gap-3">
           <MacroBar
             icon={<Beef className="h-4 w-4" />}
@@ -138,18 +257,26 @@ export function MealAnalysisDisplay({
 
       {/* Food items list */}
       <Card className="mb-6 rounded-2xl border-border bg-card p-4">
-        <h3 className="mb-3 text-sm font-semibold text-foreground">Detected Items</h3>
+        <h3 className="mb-3 text-sm font-semibold text-foreground">
+          Detected Items
+        </h3>
         <div className="flex flex-col gap-2.5">
           {analysis.items.map((item, i) => (
             <div key={i} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Flame className="h-3.5 w-3.5 text-accent" />
                 <div>
-                  <p className="text-sm font-medium text-foreground">{item.name}</p>
-                  <p className="text-xs text-muted-foreground">{item.portion}</p>
+                  <p className="text-sm font-medium text-foreground">
+                    {item.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {item.portion}
+                  </p>
                 </div>
               </div>
-              <span className="text-sm font-semibold text-foreground">{item.calories} kcal</span>
+              <span className="text-sm font-semibold text-foreground">
+                {item.calories} kcal
+              </span>
             </div>
           ))}
         </div>
@@ -160,7 +287,7 @@ export function MealAnalysisDisplay({
         <Button
           variant="outline"
           onClick={onAnalyzeAgain}
-          disabled={isAnalyzing}
+          disabled={isAnalyzing || isSavingToLog}
           className="h-12 w-full rounded-2xl text-sm font-medium"
         >
           {isAnalyzing ? (
@@ -175,17 +302,37 @@ export function MealAnalysisDisplay({
             </>
           )}
         </Button>
-        <Button
-          onClick={onContinue}
-          disabled={isAnalyzing}
-          className="h-14 w-full rounded-2xl text-base font-semibold shadow-lg shadow-primary/20"
-        >
-          Save & Get Plan
-          <ArrowRight className="ml-1 h-5 w-5" />
-        </Button>
+        {!isAuthenticated ? (
+          <Button
+            onClick={onContinue}
+            disabled={isAnalyzing || isSavingToLog}
+            className="h-14 w-full rounded-2xl text-base font-semibold shadow-lg shadow-primary/20"
+          >
+            Save & Get Plan
+            <ArrowRight className="ml-1 h-5 w-5" />
+          </Button>
+        ) : (
+          <Button
+            onClick={handleAddToLogAndViewDashboard}
+            disabled={isAnalyzing || isSavingToLog}
+            className="h-14 w-full rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white text-base font-semibold shadow-lg shadow-emerald-500/20"
+          >
+            {isSavingToLog ? (
+              <>
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                Add to Log & View Dashboard
+                <ArrowRight className="ml-1 h-5 w-5" />
+              </>
+            )}
+          </Button>
+        )}
       </div>
     </div>
-  )
+  );
 }
 
 function MacroBar({
@@ -196,17 +343,20 @@ function MacroBar({
   color,
   unit,
 }: {
-  icon: React.ReactNode
-  label: string
-  value: number
-  total: number
-  color: string
-  unit: string
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  total: number;
+  color: string;
+  unit: string;
 }) {
-  const percentage = total > 0 ? (value / total) * 100 : 0
+  const percentage = total > 0 ? (value / total) * 100 : 0;
   return (
     <div className="flex items-center gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary" style={{ color }}>
+      <div
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-secondary"
+        style={{ color }}
+      >
         {icon}
       </div>
       <div className="flex-1">
@@ -225,5 +375,5 @@ function MacroBar({
         </div>
       </div>
     </div>
-  )
+  );
 }
