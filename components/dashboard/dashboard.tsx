@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
-import type { UserProfile, DailyLog, MealSuggestion, MealAnalysis } from '@/lib/types'
+import type { UserProfile, DailyLog, MealSuggestion, MealAnalysis, PlannedMeal } from '@/lib/types'
 import {
   getDailyLog,
   saveDailyLog,
@@ -13,10 +13,11 @@ import {
 import { getTotalConsumed, calculateRemainingCalories } from '@/lib/nutrition'
 import { CalorieRing } from './calorie-ring'
 import { MealCard } from './meal-card'
-import { SuggestionCard } from './suggestion-card'
+import { FALLBACK_FOOD_IMAGE_URL } from './suggestion-card'
+import { SwipeableSuggestionStack } from './swipeable-suggestion-stack'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Camera, Beef, Wheat, Droplets, Leaf, Loader2 } from 'lucide-react'
+import { Camera, Beef, Wheat, Droplets, Leaf, Loader2, Check, RotateCcw, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 
@@ -26,14 +27,52 @@ interface DashboardProps {
 }
 
 const DELETE_UNDO_MS = 5000
+const PLANNED_UNDO_MS = 5000
+
+function createMealFromSuggestion(suggestion: MealSuggestion): MealAnalysis {
+  return {
+    name: suggestion.name,
+    calories: suggestion.calories,
+    protein: suggestion.protein,
+    carbs: suggestion.carbs,
+    fat: suggestion.fat,
+    fiber: 0,
+    imageUrl: suggestion.imageUrl,
+    items: [
+      {
+        name: suggestion.name,
+        portion: '1 serving',
+        calories: suggestion.calories,
+        protein: suggestion.protein,
+        carbs: suggestion.carbs,
+        fat: suggestion.fat,
+      },
+    ],
+    timestamp: new Date().toISOString(),
+  }
+}
+
+function createPlannedMeal(suggestion: MealSuggestion): PlannedMeal {
+  return {
+    ...suggestion,
+    plannedId:
+      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+  }
+}
 
 export function Dashboard({ profile, onAddMeal }: DashboardProps) {
   const [dailyLog, setDailyLog] = useState<DailyLog>(getDailyLog())
   const [suggestions, setSuggestions] = useState<MealSuggestion[]>([])
+  const [plannedMeals, setPlannedMeals] = useState<PlannedMeal[]>([])
+  const [undoMeal, setUndoMeal] = useState<PlannedMeal | null>(null)
+  const [undoMealIndex, setUndoMealIndex] = useState<number | null>(null)
   const [loadingSuggestions, setLoadingSuggestions] = useState(false)
   const [customPrompt, setCustomPrompt] = useState('')
   const [isRegenerating, setIsRegenerating] = useState(false)
   const pendingDeleteTimers = useRef<Map<string, number>>(new Map())
+  const plannedUndoTimer = useRef<number | null>(null)
 
   const consumed = getTotalConsumed(dailyLog.meals)
   const remaining = calculateRemainingCalories(profile.dailyCalorieTarget, consumed.calories)
@@ -105,30 +144,14 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
     return () => {
       pendingDeleteTimers.current.forEach((timer) => window.clearTimeout(timer))
       pendingDeleteTimers.current.clear()
+      if (plannedUndoTimer.current) {
+        window.clearTimeout(plannedUndoTimer.current)
+      }
     }
   }, [])
 
-  const handleAddSuggestion = async (suggestion: MealSuggestion) => {
-    const meal: MealAnalysis = {
-      name: suggestion.name,
-      calories: suggestion.calories,
-      protein: suggestion.protein,
-      carbs: suggestion.carbs,
-      fat: suggestion.fat,
-      fiber: 0,
-      items: [
-        {
-          name: suggestion.name,
-          portion: '1 serving',
-          calories: suggestion.calories,
-          protein: suggestion.protein,
-          carbs: suggestion.carbs,
-          fat: suggestion.fat,
-        },
-      ],
-      timestamp: new Date().toISOString(),
-    }
-
+  const addSuggestionToDailyLog = async (suggestion: MealSuggestion) => {
+    const meal = createMealFromSuggestion(suggestion)
     saveMealToLog(meal)
     const syncedMeal = await syncMealToSupabase(profile.email, meal)
     if (!syncedMeal) {
@@ -136,8 +159,36 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
     }
     const updatedLog = getDailyLog()
     setDailyLog(updatedLog)
-    setSuggestions((prev) => prev.filter((s) => s.name !== suggestion.name))
     toast.success(`Added ${suggestion.name} to your daily log!`)
+  }
+
+  const clearPlannedUndo = useCallback(() => {
+    if (plannedUndoTimer.current) {
+      window.clearTimeout(plannedUndoTimer.current)
+      plannedUndoTimer.current = null
+    }
+    setUndoMeal(null)
+    setUndoMealIndex(null)
+  }, [])
+
+  const removeSuggestion = useCallback((targetSuggestion: MealSuggestion) => {
+    setSuggestions((prev) => {
+      const suggestionIndex = prev.lastIndexOf(targetSuggestion)
+      if (suggestionIndex === -1) return prev
+      return prev.filter((_, index) => index !== suggestionIndex)
+    })
+  }, [])
+
+  const startPlannedUndoTimer = () => {
+    if (plannedUndoTimer.current) {
+      window.clearTimeout(plannedUndoTimer.current)
+    }
+
+    plannedUndoTimer.current = window.setTimeout(() => {
+      setUndoMeal(null)
+      setUndoMealIndex(null)
+      plannedUndoTimer.current = null
+    }, PLANNED_UNDO_MS)
   }
 
   const handleRemoveMeal = (mealIndex: number) => {
@@ -188,8 +239,43 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
     })
   }
 
-  const deleteMeal = (mealIndex: number) => {
-    setSuggestions((prev) => prev.filter((_, index) => index !== mealIndex))
+  const handleDiscardTopSuggestion = useCallback((suggestion: MealSuggestion) => {
+    removeSuggestion(suggestion)
+  }, [removeSuggestion])
+
+  const handlePlanMeal = useCallback((suggestion: MealSuggestion) => {
+    clearPlannedUndo()
+    removeSuggestion(suggestion)
+    setPlannedMeals((prev) => [...prev, createPlannedMeal(suggestion)])
+  }, [clearPlannedUndo, removeSuggestion])
+
+  const handleConsumePlannedMeal = async (plannedMeal: PlannedMeal) => {
+    clearPlannedUndo()
+    setPlannedMeals((prev) => prev.filter((meal) => meal.plannedId !== plannedMeal.plannedId))
+    await addSuggestionToDailyLog(plannedMeal)
+  }
+
+  const handleRemovePlannedMeal = (plannedMeal: PlannedMeal) => {
+    const mealIndex = plannedMeals.findIndex((meal) => meal.plannedId === plannedMeal.plannedId)
+    if (mealIndex === -1) return
+
+    setPlannedMeals((prev) => prev.filter((meal) => meal.plannedId !== plannedMeal.plannedId))
+    setUndoMeal(plannedMeal)
+    setUndoMealIndex(mealIndex)
+    startPlannedUndoTimer()
+  }
+
+  const handleUndoPlannedMeal = () => {
+    if (!undoMeal) return
+
+    setPlannedMeals((prev) => {
+      const restoredMeals = [...prev]
+      const restoreIndex = undoMealIndex === null ? restoredMeals.length : Math.min(undoMealIndex, restoredMeals.length)
+      restoredMeals.splice(restoreIndex, 0, undoMeal)
+      return restoredMeals
+    })
+
+    clearPlannedUndo()
   }
 
   const handleGenerateNewMeal = async () => {
@@ -327,34 +413,7 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
       {/* Suggested Next Meals */}
       <div className="mb-6">
         <h2 className="mb-3 text-base font-semibold text-foreground">Suggested Next Meals</h2>
-        {loadingSuggestions ? (
-          <div className="flex flex-col gap-3">
-            {[1, 2].map((n) => (
-              <Card key={n} className="h-28 animate-pulse rounded-2xl border-border bg-muted" />
-            ))}
-          </div>
-        ) : suggestions.length === 0 ? (
-          <Card className="flex flex-col items-center gap-2 rounded-2xl border-border bg-card p-6 text-center">
-            <p className="text-sm text-muted-foreground">
-              {consumed.calories >= profile.dailyCalorieTarget
-                ? 'Daily goal reached!'
-                : 'No suggestions right now.'}
-            </p>
-          </Card>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {suggestions.map((s, i) => (
-              <SuggestionCard
-                key={i}
-                suggestion={s}
-                onAdd={handleAddSuggestion}
-                onDelete={() => deleteMeal(i)}
-              />
-            ))}
-          </div>
-        )}
-
-        <Card className="mt-4 flex flex-col gap-3 rounded-2xl border-border bg-card p-4">
+        <Card className="mb-4 flex flex-col gap-3 rounded-2xl border-border bg-card p-4">
           <div>
             <p className="text-sm font-semibold text-foreground">Generate something different</p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
@@ -384,6 +443,121 @@ export function Dashboard({ profile, onAddMeal }: DashboardProps) {
             </Button>
           </div>
         </Card>
+
+        {loadingSuggestions ? (
+          <div className="flex flex-col gap-3">
+            {[1, 2].map((n) => (
+              <Card key={n} className="h-28 animate-pulse rounded-2xl border-border bg-muted" />
+            ))}
+          </div>
+        ) : suggestions.length === 0 ? (
+          <Card className="flex flex-col items-center gap-2 rounded-2xl border-border bg-card p-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              {consumed.calories >= profile.dailyCalorieTarget
+                ? 'Daily goal reached!'
+                : 'No suggestions right now.'}
+            </p>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+              Swipe left to discard or right to plan your next meal.
+            </p>
+            <SwipeableSuggestionStack
+              suggestions={suggestions}
+              onDiscardTop={handleDiscardTopSuggestion}
+              onPlanTop={handlePlanMeal}
+            />
+          </div>
+        )}
+
+        <div className="mt-6">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h3 className="text-base font-semibold text-foreground">Planned Meals</h3>
+            {plannedMeals.length > 0 ? (
+              <span className="text-xs font-medium text-muted-foreground">
+                {plannedMeals.length} planned
+              </span>
+            ) : null}
+          </div>
+
+          {undoMeal ? (
+            <Card className="mb-3 flex flex-row items-center justify-between gap-3 rounded-2xl border-border bg-card px-4 py-3">
+              <div>
+                <p className="text-sm font-semibold text-foreground">{undoMeal.name} removed</p>
+                <p className="text-xs text-muted-foreground">Restore it to your planned meals list.</p>
+              </div>
+              <Button variant="secondary" size="sm" onClick={handleUndoPlannedMeal} className="rounded-xl">
+                <RotateCcw className="h-3.5 w-3.5" />
+                Undo
+              </Button>
+            </Card>
+          ) : null}
+
+          {plannedMeals.length === 0 ? (
+            <Card className="flex flex-col items-center gap-2 rounded-2xl border-border bg-card p-6 text-center">
+              <p className="text-sm text-muted-foreground">Swipe right on a meal to plan it here.</p>
+              <p className="text-xs text-muted-foreground">
+                Checkmark adds its macros to today. The close button removes it without consuming.
+              </p>
+            </Card>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {plannedMeals.map((meal) => (
+                <Card key={meal.plannedId} className="overflow-hidden rounded-2xl border-border bg-card p-0">
+                  <div className="flex flex-col sm:flex-row">
+                    <img
+                      src={meal.imageUrl || FALLBACK_FOOD_IMAGE_URL}
+                      alt={meal.name}
+                      className="h-32 w-full object-cover sm:h-auto sm:w-36"
+                    />
+                    <div className="flex flex-1 flex-col gap-3 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">{meal.name}</p>
+                          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{meal.description}</p>
+                        </div>
+                        <span className="shrink-0 text-sm font-bold text-foreground">{meal.calories} kcal</span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-medium text-secondary-foreground">
+                          P {meal.protein}g
+                        </span>
+                        <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-medium text-secondary-foreground">
+                          C {meal.carbs}g
+                        </span>
+                        <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-medium text-secondary-foreground">
+                          F {meal.fat}g
+                        </span>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="icon-sm"
+                          className="rounded-full"
+                          onClick={() => void handleConsumePlannedMeal(meal)}
+                          aria-label={`Consume ${meal.name}`}
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon-sm"
+                          variant="outline"
+                          className="rounded-full"
+                          onClick={() => handleRemovePlannedMeal(meal)}
+                          aria-label={`Remove ${meal.name} from planned meals`}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
     </div>

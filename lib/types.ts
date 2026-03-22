@@ -43,6 +43,10 @@ export interface MealSuggestion {
   mealType: 'breakfast' | 'lunch' | 'dinner' | 'snack'
 }
 
+export interface PlannedMeal extends MealSuggestion {
+  plannedId: string
+}
+
 export interface UserProfile {
   email: string
   name: string

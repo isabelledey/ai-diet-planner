@@ -113,15 +113,22 @@ export async function sendOTP(email: string, name: string, mode: AuthMode = 'sig
   const supabase = createClient()
   const emailRedirectTo =
     typeof window !== 'undefined' ? `${window.location.origin}/dashboard` : undefined
+  const otpOptions =
+    mode === 'signup'
+      ? {
+          shouldCreateUser: true,
+          ...(emailRedirectTo ? { emailRedirectTo } : {}),
+          data: { name: trimmedName },
+        }
+      : {
+          shouldCreateUser: false,
+          ...(emailRedirectTo ? { emailRedirectTo } : {}),
+        }
 
   try {
     const { error } = await supabase.auth.signInWithOtp({
       email: normalizedEmail,
-      options: {
-        shouldCreateUser: mode === 'signup',
-        ...(emailRedirectTo ? { emailRedirectTo } : {}),
-        ...(mode === 'signup' ? { data: { name: trimmedName } } : {}),
-      },
+      options: otpOptions,
     })
 
     if (error) {
